@@ -1,4 +1,4 @@
-# Use QA slides in Gamma app (10-slide detailed PPT)
+# Use QA slides in Gamma app (5-slide PPT)
 
 You can either **publish automatically** (script creates the deck on Gamma and gives you the URL) or **paste the outline** into Gamma manually.
 
@@ -19,11 +19,11 @@ You can either **publish automatically** (script creates the deck on Gamma and g
    ```
 
 4. The script will:
-   - Generate the 10-slide outline
+   - Generate the 5-slide outline
    - Create the presentation on Gamma
    - Print the **Gamma PPT URL** (shareable link), e.g. `https://gamma.app/docs/xxxxx`
 
-Use that URL to open, edit, or share the 10-slide deck.
+Use that URL to open, edit, or share the 5-slide deck.
 
 ---
 
@@ -44,5 +44,5 @@ Use that URL to open, edit, or share the 10-slide deck.
 
 | File | Purpose |
 |------|--------|
-| `report_slides_gamma.md` | 10-slide outline (used by --gamma-publish or for manual paste) |
+| `report_slides_gamma.md` | 5-slide outline (used by --gamma-publish or for manual paste) |
 | `report_slides.md` | Short 2-slide summary |
