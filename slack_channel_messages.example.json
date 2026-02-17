@@ -1,0 +1,14 @@
+[
+  {
+    "ts": "2025-02-14T10:00:00",
+    "user": "U01ABC",
+    "text": "Deploy is blocked on PROJ-101 – need sign-off from QA.",
+    "channel": "#project-qa"
+  },
+  {
+    "ts": "2025-02-14T11:30:00",
+    "user": "U02DEF",
+    "text": "Environment is flaky again; same as PROJ-102.",
+    "channel": "#project-qa"
+  }
+]

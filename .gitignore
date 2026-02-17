@@ -1,0 +1,12 @@
+.env
+*.pyc
+__pycache__/
+.venv/
+venv/
+qa_challenges_report.md
+slack_export/
+slack_channel_messages.json
+.env
+*.pyc
+__pycache__/
+.env.local
