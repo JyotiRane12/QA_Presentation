@@ -315,6 +315,54 @@ Recent comments:
         return ""
 
 
+def _get_ai_slack_channel_summary(slack_messages: list[dict], max_messages: int = 80) -> str:
+    """Use OpenAI to summarize Slack channel messages for QA report. Focus: QA challenges, bugs/patterns, escalations, blockers, fix duration, dev-ops/env challenges. Returns empty if no key or no messages."""
+    if not OPENAI_API_KEY or not slack_messages:
+        return ""
+    lines = []
+    for m in slack_messages[-max_messages:]:
+        ts = m.get("ts", "")[:10] if isinstance(m.get("ts"), str) else str(m.get("ts", ""))
+        user = (m.get("user") or "?").strip()
+        text = (m.get("text") or "").strip().replace("\n", " ").replace("\r", "")[:500]
+        if text:
+            lines.append(f"[{ts}] {user}: {text}")
+    if not lines:
+        return ""
+    context = "\n".join(lines)
+    prompt = """You are a QA manager. Below are recent messages from a Slack channel. Write a summary for a QA report. The summary MUST be at least 100 words. Cover ONLY what appears in the messages:
+
+- QA challenges and testing blockers
+- Bugs and any pattern of bugs (e.g. recurring areas, types)
+- Escalations and blockers for testing
+- Time or duration mentioned to fix bugs / resolve issues
+- Dev-ops and environment-related challenges (e.g. deployment, config, env/LEDs issues)
+
+If the messages do not mention a topic, omit it. Be factual. Use one or two paragraphs or 4–8 bullets so the total length is at least 100 words. Output only the summary, no preamble or headings."""
+
+    try:
+        from openai import OpenAI
+        import httpx
+        openai_verify = os.getenv("OPENAI_VERIFY_SSL", "true").lower() not in ("0", "false", "no")
+        openai_proxy = os.getenv("OPENAI_HTTP_PROXY") or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+        if openai_proxy or not openai_verify:
+            http_client = httpx.Client(verify=openai_verify, proxy=openai_proxy or None, timeout=60.0)
+            client = OpenAI(api_key=OPENAI_API_KEY, http_client=http_client)
+        else:
+            client = OpenAI(api_key=OPENAI_API_KEY)
+        r = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": "You write concise QA and Slack channel summaries for project reports."},
+                {"role": "user", "content": prompt + "\n\n---\n\n" + context},
+            ],
+            max_tokens=600,
+        )
+        return (r.choices[0].message.content or "").strip()
+    except Exception as e:
+        print(f"  AI Slack summary failed: {e}")
+        return ""
+
+
 def _format_slack_channel_summary(slack_messages: list[dict], max_messages: int = 25, max_text_len: int = 150) -> str:
     """Format Slack messages into a single summary string for CSV (one line per message)."""
     if not slack_messages:
@@ -340,7 +388,7 @@ def _generate_slides_with_ai(
     use_ai_summary: bool,
     publish_to_gamma: bool = False,
 ) -> None:
-    """Use OpenAI to generate 2 slides from report data; optionally publish 10-slide deck to Gamma and return URL."""
+    """Use OpenAI to generate 2 slides from report data; optionally publish 5-slide deck to Gamma and return URL."""
     if not OPENAI_API_KEY:
         print("Slides not generated: OPENAI_API_KEY not set.")
         return
@@ -376,7 +424,10 @@ Summary: {summary}
 Total Bug count: {total_bugs} | P0: {p0_bugs} | P1: {p1_bugs} | Internal PEDS: {internal_peds} | LEDs: {leds}
 Challenges (QA IP to Ready for deployment): {challenges_text}
 AI generated summary: {ai_summary or '(none)'}""")
-    slack_summary = _format_slack_channel_summary(slack_messages or [], max_messages=15)
+    # Use AI-generated Slack summary when available (same focus as CSV)
+    slack_summary = _get_ai_slack_channel_summary(slack_messages or [], max_messages=50) if (slack_messages and OPENAI_API_KEY) else ""
+    if not slack_summary:
+        slack_summary = _format_slack_channel_summary(slack_messages or [], max_messages=15)
     context = "\n\n---\n\n".join(parts)
     context += f"\n\nSlack channel summary: {slack_summary or '(none)'}"
     if len(issue_keys) > 1:
@@ -423,23 +474,18 @@ Use: JIRA issue summary, Total Bug count, P0/P1 count, LEDs, Internal PEDS, Chal
         Path(slides_path).write_text(text, encoding="utf-8")
         print(f"2 slides written to {slides_path}")
 
-        # Gamma app: 10-slide detailed version (use --- between slides for Gamma)
-        gamma_prompt = """You are a QA manager creating a detailed presentation for Gamma app. Using ONLY the data below, generate exactly 10 slides. Focus on QA CHALLENGES by cause: Developer, Dev-ops, Environment (LEDs), and Resource issues.
+        # Gamma app: 5-slide presentation (use --- between slides for Gamma)
+        gamma_prompt = """You are a QA manager creating a presentation for Gamma app. Using ONLY the data below, generate exactly 5 slides. Focus on QA CHALLENGES by cause: Developer, Dev-ops, Environment (LEDs), and Resource issues.
 
 Output format: each slide is a section. Separate each slide with a line containing only: ---
 
 Slide 1: Title slide – QA Project Challenges Presentation
-Slide 2: Executive summary / Scope (issues covered)
-Slide 3: QA challenges due to DEVELOPER – e.g. bug volume, P0/P1 counts, code quality, rework, delivery delays. Use Total Bug count, P0, P1 from data.
-Slide 4: QA challenges due to DEV-OPS – e.g. deployment pipeline, config, release timing, environment setup. Infer from challenges/timeline data if present.
-Slide 5: QA challenges – ENVIRONMENT / LEDs – environment flakiness, LEDs count, test env issues. Use LEDs and any env-related points from data.
-Slide 6: QA challenges – RESOURCE (if any) – capacity, tooling, availability. Say "No significant resource issues identified" if data has none.
-Slide 7: Internal PEDS and key metrics – counts and impact on QA
-Slide 8: Timeline – Ready for QA, Deployment completed, pressure points (QA IP to Ready for deployment)
-Slide 9: Risks and recommendations (by cause: developer, dev-ops, environment, resource)
-Slide 10: Next steps / Conclusion
+Slide 2: Executive summary & key metrics – Scope (issues covered), Total Bug count, P0/P1, LEDs, Internal PEDS. 3-5 bullets.
+Slide 3: QA challenges – Developer & Dev-ops – Bug volume/code quality, deployment pipeline, config, release timing. Use data. 3-6 bullets.
+Slide 4: QA challenges – Environment (LEDs) & Resource – Environment flakiness, LEDs, test env; capacity/tooling if any. 3-6 bullets.
+Slide 5: Timeline, risks & next steps – Ready for QA, Deployment completed, QA IP to Ready for deployment; risks/recommendations; conclusion. 3-6 bullets.
 
-Use the provided data. Each slide: title line then 3-6 bullet points. Call out Developer, Dev-ops, Environment (LEDs), Resource explicitly where relevant. No preamble. Start with Slide 1."""
+Use the provided data. Each slide: title line then 3-6 bullet points. Call out Developer, Dev-ops, Environment (LEDs), Resource where relevant. No preamble. Start with Slide 1."""
 
         try:
             r2 = client.chat.completions.create(
@@ -448,13 +494,13 @@ Use the provided data. Each slide: title line then 3-6 bullet points. Call out D
                     {"role": "system", "content": "You generate QA presentation outlines focused on challenges due to Developer, Dev-ops, Environment (LEDs), and Resource. Use --- on its own line between slides."},
                     {"role": "user", "content": gamma_prompt + "\n\n---\n\nData:\n" + context},
                 ],
-                max_tokens=1500,
+                max_tokens=1200,
             )
             gamma_text = (r2.choices[0].message.content or "").strip()
             if gamma_text:
                 gamma_path = Path(output_path).parent / (Path(output_path).stem + "_slides_gamma.md")
                 Path(gamma_path).write_text(gamma_text, encoding="utf-8")
-                print(f"10-slide Gamma outline written to {gamma_path}")
+                print(f"5-slide Gamma outline written to {gamma_path}")
                 if publish_to_gamma:
                     gamma_url = _publish_to_gamma(gamma_path)
                     if gamma_url:
@@ -466,7 +512,7 @@ Use the provided data. Each slide: title line then 3-6 bullet points. Call out D
 
 
 def _publish_to_gamma(gamma_md_path: Path) -> str | None:
-    """Create a 10-slide presentation on Gamma from the outline file; return the shareable gamma URL."""
+    """Create a 5-slide presentation on Gamma from the outline file; return the shareable gamma URL."""
     if not GAMMA_API_KEY:
         print("Gamma publish skipped: GAMMA_API_KEY not set in .env")
         return None
@@ -482,7 +528,7 @@ def _publish_to_gamma(gamma_md_path: Path) -> str | None:
         "inputText": outline_text,
         "textMode": "preserve",
         "format": "presentation",
-        "numCards": 10,
+        "numCards": 5,
         "cardSplit": "inputTextBreaks",
     }
     try:
@@ -529,7 +575,16 @@ def _write_csv_report(
     use_ai = use_ai_summary and bool(OPENAI_API_KEY)
     if use_ai:
         print("Using AI to generate QA challenges summary for CSV...")
-    slack_summary = _format_slack_channel_summary(slack_messages or [])
+    # Slack channel summary: AI-generated from channel messages when OpenAI key and messages exist
+    if OPENAI_API_KEY and (slack_messages or []):
+        print("Using AI to generate Slack channel summary for CSV...")
+        slack_summary = _get_ai_slack_channel_summary(slack_messages or [])
+        if slack_summary:
+            print("AI generated Slack summary:\n" + slack_summary)
+        if not slack_summary:
+            slack_summary = _format_slack_channel_summary(slack_messages or [])
+    else:
+        slack_summary = _format_slack_channel_summary(slack_messages or [])
     headers = [
         "JIRA Issue id",
         "Summary",
@@ -819,8 +874,8 @@ def main():
     ap.add_argument("--output", "-o", default="qa_challenges_report.md", help="Output Markdown file")
     ap.add_argument("--limit", "-n", type=int, default=50, help="Max issues when using --project")
     ap.add_argument("--ai", action="store_true", help="Use OpenAI to generate QA challenges summary in CSV (requires OPENAI_API_KEY in .env)")
-    ap.add_argument("--slides", action="store_true", help="Use AI to generate 2 slides + 10-slide Gamma outline")
-    ap.add_argument("--gamma-publish", action="store_true", help="Publish 10-slide deck to Gamma and print shareable PPT URL (requires GAMMA_API_KEY, run with --slides)")
+    ap.add_argument("--slides", action="store_true", help="Use AI to generate 2 slides + 5-slide Gamma outline")
+    ap.add_argument("--gamma-publish", action="store_true", help="Publish 5-slide deck to Gamma and print shareable PPT URL (requires GAMMA_API_KEY, run with --slides)")
     args = ap.parse_args()
     use_ai_summary = args.ai or os.getenv("OPENAI_QA_SUMMARY", "").lower() in ("1", "true", "yes")
     generate_slides = args.slides or args.gamma_publish
