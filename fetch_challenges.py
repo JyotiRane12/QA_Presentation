@@ -748,6 +748,7 @@ def build_report(
     use_ai_summary: bool = False,
     generate_slides: bool = False,
     publish_to_gamma: bool = False,
+    generate_csv: bool = True,
 ) -> None:
     lines = [
         "# QA Project Challenges",
@@ -856,10 +857,11 @@ def build_report(
     Path(output_path).write_text("\n".join(lines), encoding="utf-8")
     print(f"Report written to {output_path}")
 
-    # CSV export: one row per JIRA issue with bug/PEDS/LEDs counts and status dates
-    csv_path = Path(output_path).with_suffix(".csv")
-    _write_csv_report(issue_keys, linked_by_key, issues_detail, csv_path, use_ai_summary=use_ai_summary, slack_messages=slack_messages)
-    print(f"CSV written to {csv_path}")
+    # CSV export: one row per JIRA issue with bug/PEDS/LEDs counts and status dates (optional)
+    if generate_csv:
+        csv_path = Path(output_path).with_suffix(".csv")
+        _write_csv_report(issue_keys, linked_by_key, issues_detail, csv_path, use_ai_summary=use_ai_summary, slack_messages=slack_messages)
+        print(f"CSV written to {csv_path}")
 
     # AI-generated 2 slides from report data (AI summary, bug counts, challenges, etc.)
     if generate_slides:
@@ -876,6 +878,7 @@ def main():
     ap.add_argument("--ai", action="store_true", help="Use OpenAI to generate QA challenges summary in CSV (requires OPENAI_API_KEY in .env)")
     ap.add_argument("--slides", action="store_true", help="Use AI to generate 2 slides + 5-slide Gamma outline")
     ap.add_argument("--gamma-publish", action="store_true", help="Publish 5-slide deck to Gamma and print shareable PPT URL (requires GAMMA_API_KEY, run with --slides)")
+    ap.add_argument("--no-csv", action="store_true", help="Skip generating the report CSV file")
     args = ap.parse_args()
     use_ai_summary = args.ai or os.getenv("OPENAI_QA_SUMMARY", "").lower() in ("1", "true", "yes")
     generate_slides = args.slides or args.gamma_publish
@@ -928,6 +931,7 @@ def main():
         use_ai_summary=use_ai_summary,
         generate_slides=generate_slides,
         publish_to_gamma=publish_to_gamma,
+        generate_csv=not args.no_csv,
     )
 
 
