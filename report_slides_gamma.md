@@ -1,75 +1,40 @@
-Slide 1: Title slide – QA Project Challenges Presentation  
-- Gamma App: QA Challenges Overview  
-- Focused areas: Developer, Dev-ops, Environment (LEDs), Resource issues  
-- Addressing key metrics and next steps  
+Slide 1: QA Project Challenges Presentation  
+- Focus on QA challenges related to Developer, Dev-ops, Environment (LEDs), and Resource issues.  
+- Overview of the Gamma app's UCE Email template testing challenges.  
+- Identify solutions and next steps to mitigate QA blockers.  
 
 ---
 
-Slide 2: Executive summary / Scope (issues covered)  
-- Overview of QA challenges faced in Gamma App  
-- Focus on specific causes: Developer, Dev-ops, Environment (LEDs), Resource  
-- Highlighting total bug counts and deployment timelines  
+Slide 2: Executive Summary & Key Metrics  
+- Total Bug Count: 68 (P0: 37, P1: 31) indicating significant issues needing resolution.  
+- Internal PEDS: 15, highlighting additional complexities faced by QA.  
+- LEDs: 0, suggesting a lack of explicit LED-related issues but underlying environment challenges remain.  
+- Scope: Challenges encompass high bug volume, priority issues, and compatibility problems across devices.  
+- QA IP Status: Targeted transition to Ready for deployment by 2025-11-29 amidst ongoing challenges.  
 
 ---
 
-Slide 3: QA challenges due to DEVELOPER  
-- Total Bug Count: 68  
-- P0 Bugs: 37 (high criticality)  
-- P1 Bugs: 31 (high priority)  
-- High volume requires significant rework and increased testing efforts  
-- Delivery delays anticipated due to critical bug resolution needs  
+Slide 3: QA Challenges – Developer & Dev-ops  
+- High bug volume (68 issues) primarily led by Developer issues affecting code quality and deployment readiness.  
+- Significant deployment pipeline blockage due to unresolved critical bugs (P0/P1), impacting release timing.  
+- Merge branch protected-CEPI-797+SMT-52355 caused complications, highlighting fragility in Dev-ops processes.  
+- Configuration issues emerging in pre-prod environment affecting testing workflows significantly.  
+- Need for improved prioritization in bug triage to enhance overall code robustness and stability prior to deployment.  
 
 ---
 
-Slide 4: QA challenges due to DEV-OPS  
-- Deployment pipeline complexity exacerbated by high bug count  
-- Coordination required between development and QA teams  
-- Release timing affected by resolution of P0 and P1 bugs  
-- Needs streamlined processes for environment setup to mitigate delays  
+Slide 4: QA Challenges – Environment (LEDs) & Resource  
+- Environment flakiness observed, particularly with email template rendering across various devices leading to compatibility issues.  
+- Existing test environment struggles to accommodate varying test coverage percentages, indicating resource constraints.  
+- No dedicated LEDs reported, but underlying environment issues should be investigated to optimize testing.  
+- Resource allocation challenges noted, especially in addressing critical bug fixes, delaying the overall QA progress.  
+- Ongoing resource tooling assessments necessary to improve efficiency in resolving open issues.  
 
 ---
 
-Slide 5: QA challenges – ENVIRONMENT / LEDs  
-- LEDs count: 0 indicates no immediate challenges, but testing environments must be stable  
-- Potential environmental flakiness impacts testing accuracy  
-- Ensuring compatibility across versions may be affected by environmental inconsistencies  
-- Need for robust test preparation to address cross-version compatibility  
-
----
-
-Slide 6: QA challenges – RESOURCE  
-- No significant resource issues identified  
-- Current team can handle existing bug counts with prioritization  
-- Must ensure appropriate allocation of resources towards P0 and P1 bug resolution  
-
----
-
-Slide 7: Internal PEDS and key metrics – counts and impact on QA  
-- Internal PEDS: 15 identified related QA impacts  
-- Analyzing bug distribution across applications and versions  
-- Tracking critical vs. high priority metrics for improved focus  
-- Influence of these counts on testing strategy and resource allocation  
-
----
-
-Slide 8: Timeline – Ready for QA, Deployment completed, pressure points  
-- QA IP date: 2025-11-29  
-- Pressure points identified prior to deployment readiness  
-- Need adherence to timeline due to high bug volume  	
-- Aligning QA processes to ensure timeliness for deployment  
-
----
-
-Slide 9: Risks and recommendations (by cause: developer, dev-ops, environment, resource)  
-- Developer: Increasing collaboration to reduce rework  
-- Dev-ops: Implementing a more agile deployment pipeline  
-- Environment: Regular audits for flakiness despite 0 LEDs reported  
-- Resource: Monitoring capacity closely as P0/P1 bug numbers fluctuate  
-
----
-
-Slide 10: Next steps / Conclusion  
-- Prioritize resolution of critical and high priority bugs  
-- Strengthen developer-QA collaboration plans  
-- Continue monitoring timelines to meet QA IP deadlines  
-- Reinforce readiness strategies for upcoming deployment phases
+Slide 5: Timeline, Risks & Next Steps  
+- QA IP currently ready; however, risks include potential delays due to unresolved high-priority bugs before deployment.  
+- Recommendations for prioritized follow-up on critical bugs (SMT-54586, SMT-54582) to ensure readiness.  
+- Deployment status hindered by the recent emergence of bugs post-merge, necessitating urgent resolution efforts.  
+- Next steps involve enhanced communication within development and QA teams to streamline bug resolution.  
+- Conclusion emphasizes the importance of focused efforts to improve the overall development and testing environment for successful deployment.

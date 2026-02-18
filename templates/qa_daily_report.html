@@ -2,8 +2,8 @@
 {% block title %}QA Daily Report{% endblock %}
 {% block content %}
 <div class="flex flex-1 gap-6 p-6 min-h-0">
-  <!-- Left: form -->
-  <div class="w-full max-w-xl shrink-0 overflow-auto">
+  <!-- Left: form (overflow-visible so Report Output dropdown can extend below trigger) -->
+  <div class="w-full max-w-xl shrink-0 overflow-visible">
   <header class="mb-6">
     <div class="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-medium px-3 py-1 mb-4 border border-cyan-500/20">
       Daily Report → Slack
@@ -21,100 +21,174 @@
   </div>
 
   <form id="daily_form" class="rounded-2xl border border-slate-700/80 bg-slate-900/80 shadow-xl shadow-slate-900/50 p-6 space-y-5 backdrop-blur">
-    <div>
-      <label for="issue_keys" class="block text-sm font-medium text-cyan-300 mb-1.5">Jira Id <span class="text-rose-400">*</span></label>
-      <input
-        type="text"
-        id="issue_keys"
-        name="issue_keys"
-        placeholder="e.g. CEPI-5344 or CEPI-5344, CEPI-5345"
-        required
-        class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
-      />
-      <p class="mt-1 text-xs text-slate-500">Required. Comma-separated for multiple issues.</p>
-    </div>
+    <!-- Set up section (collapsed by default). overflow-visible so dropdown shows below trigger. -->
+    <details class="group/setup rounded-xl border border-slate-700/60 bg-slate-800/40 overflow-visible" id="section_setup">
+      <summary class="flex items-center justify-between gap-2 cursor-pointer list-none px-4 py-3 text-sm font-medium text-cyan-300 hover:bg-slate-700/40 transition-colors rounded-t-xl [&::-webkit-details-marker]:hidden">
+        <span>Set Up</span>
+        <svg class="w-4 h-4 shrink-0 text-slate-500 transition-transform group-open/setup:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+      </summary>
+      <div class="px-4 pt-4 pb-4 border-t border-slate-600/60 overflow-visible">
+        <div class="grid gap-x-4 gap-y-4 grid-cols-[minmax(8rem,auto)_1fr] items-center max-w-full">
+          <label for="issue_keys" class="text-sm font-medium text-cyan-300 py-2">JIRA ID <span class="text-rose-400">*</span></label>
+          <input
+            type="text"
+            id="issue_keys"
+            name="issue_keys"
+            placeholder="e.g. CEPI-5344 or CEPI-5344, CEPI-5345"
+            required
+            class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
+          />
+          <p class="col-start-2 text-xs text-slate-500 mt-1">Required. Comma-separated for multiple issues.</p>
 
-    <div>
-      <div class="flex items-center gap-1.5 mb-1.5">
-        <label for="slack_channel_id" class="text-sm font-medium text-cyan-300">Slack Channel Id <span class="text-rose-400">*</span></label>
-        <span class="group/info relative inline-flex">
-          <svg class="w-4 h-4 text-slate-500 hover:text-cyan-400 cursor-help transition-colors" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-          </svg>
-          <span class="absolute left-0 top-full mt-1.5 hidden group-hover/info:block z-10 w-72 px-3 py-2 text-xs font-normal text-slate-200 bg-slate-800 border border-slate-600 rounded-lg shadow-lg whitespace-normal">
-            Required to read the last 1 day of conversation and create Challenges. Get the channel ID in Slack: right-click the channel → View channel details → copy the ID. Also used to post the report when posting to channel.
-          </span>
-        </span>
-      </div>
-      <input
-        type="text"
-        id="slack_channel_id"
-        name="slack_channel_id"
-        placeholder="e.g. C0AFTQD06MP1"
-        required
-        class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
-      />
-      <p class="mt-1 text-xs text-slate-500">Required to read the last 1 day of conversation and create Challenges. Also used to post the report when posting to channel.</p>
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium text-cyan-300 mb-1.5">Report Output</label>
-      <p class="text-xs text-slate-500 mb-1.5">QA Update, Jira Id and Jira Title are always included. Choose optional sections below.</p>
-      <div class="relative" id="report_output_multiselect_wrapper">
-        <button type="button" id="report_output_trigger" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-left text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors flex items-center justify-between gap-2">
-          <span id="report_output_trigger_text">No optional sections selected</span>
-          <svg class="w-4 h-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-        </button>
-        <input type="hidden" name="report_output_keys" id="report_output_keys" value="" />
-        <div id="report_output_dropdown" class="hidden absolute left-0 right-0 top-full mt-1 z-20 rounded-xl border border-slate-600 bg-slate-800 shadow-xl max-h-80 flex flex-col">
-          <div class="p-2 border-b border-slate-600 shrink-0">
-            <input type="text" id="report_output_search" placeholder="Search sections..." class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/60" />
-          </div>
-          <div class="p-2 border-b border-slate-600 shrink-0">
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white">
-              <input type="checkbox" id="report_output_select_all" class="rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" />
-              <span id="report_output_select_all_label">Select all</span>
-            </label>
-          </div>
-          <div id="report_output_options" class="overflow-y-auto p-2 space-y-1 min-h-0">
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="ready_for_qa_date" data-label="Ready For Qa Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Ready For Qa Date</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="qa_start_date" data-label="Qa Start Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Qa Start Date</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="one_round_of_testing_completion" data-label="One Round Of Testing Completion"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> One Round Of Testing Completion</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="total_bugs" data-label="Total Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Total Bugs</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_dev" data-label="Bugs With Dev"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With Dev</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_qa" data-label="Bugs With Qa"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With Qa</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="closed_bugs" data-label="Closed Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Closed Bugs</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="challenges" data-label="Challenges"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Challenges</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="environment_issue" data-label="Environment Issue"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Environment Issue</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="targetted_release_date" data-label="Targetted Release Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Targetted Release Date</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="uat_status" data-label="UAT Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> UAT Status</label>
-            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="preprod_status" data-label="Preprod Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Preprod Status</label>
+          <label for="slack_channel_id" class="text-sm font-medium text-cyan-300 py-2 flex items-center gap-1.5">
+            Slack Channel ID <span class="text-rose-400">*</span>
+            <span class="group/info relative inline-flex">
+              <svg class="w-4 h-4 text-slate-500 hover:text-cyan-400 cursor-help transition-colors" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+              <span class="absolute left-0 top-full mt-1.5 hidden group-hover/info:block z-10 w-72 px-3 py-2 text-xs font-normal text-slate-200 bg-slate-800 border border-slate-600 rounded-lg shadow-lg whitespace-normal">
+                Required for Challenges (reads last 1 day of messages) and for posting the report. In Slack: right-click channel → View channel details → copy the ID.
+              </span>
+            </span>
+          </label>
+          <input
+            type="text"
+            id="slack_channel_id"
+            name="slack_channel_id"
+            placeholder="e.g. C0AFTQD06MP1"
+            required
+            class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
+          />
+          <label for="report_output_trigger" class="text-sm font-medium text-cyan-300 py-2 flex items-center gap-1.5">
+            Report Output
+            <span class="group/info-report relative inline-flex">
+              <svg class="w-4 h-4 text-slate-500 hover:text-cyan-400 cursor-help transition-colors" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+              <span class="absolute left-0 top-full mt-1.5 hidden group-hover/info-report:block z-10 w-72 px-3 py-2 text-xs font-normal text-slate-200 bg-slate-800 border border-slate-600 rounded-lg shadow-lg whitespace-normal">
+                QA Update, JIRA ID and Jira Title are always included. Choose optional sections above.
+              </span>
+            </span>
+          </label>
+          <div class="relative w-full min-w-0" id="report_output_multiselect_wrapper">
+            <button type="button" id="report_output_trigger" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-left text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors flex items-center justify-between gap-2">
+              <span id="report_output_trigger_text" class="truncate">No optional sections selected</span>
+              <svg class="w-4 h-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            <input type="hidden" name="report_output_keys" id="report_output_keys" value="" />
+            <div id="report_output_dropdown" class="hidden absolute left-0 right-0 top-full mt-1 z-[100] rounded-xl border border-slate-600 bg-slate-800 shadow-xl max-h-80 flex flex-col w-full">
+              <div class="p-2 border-b border-slate-600 shrink-0">
+                <input type="text" id="report_output_search" placeholder="Search Sections..." class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/60" />
+              </div>
+              <div class="p-2 border-b border-slate-600 shrink-0">
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white">
+                  <input type="checkbox" id="report_output_select_all" class="rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" />
+                  <span id="report_output_select_all_label">Select All</span>
+                </label>
+              </div>
+              <div id="report_output_options" class="overflow-y-auto p-2 space-y-1 min-h-0">
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="ready_for_qa_date" data-label="Ready For QA Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Ready For QA Date</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="qa_start_date" data-label="QA Start Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> QA Start Date</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="one_round_of_testing_completion" data-label="One Round Of Testing Completion"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> One Round Of Testing Completion</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="total_bugs" data-label="Total Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Total Bugs</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_dev" data-label="Bugs With Dev"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With Dev</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_qa" data-label="Bugs With QA"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With QA</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="closed_bugs" data-label="Closed Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Closed Bugs</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="challenges" data-label="Challenges"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Challenges</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="environment_issue" data-label="Environment Issue"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Environment Issue</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="targetted_release_date" data-label="Targetted Release Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Targetted Release Date</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="uat_status" data-label="UAT Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> UAT Status</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="preprod_status" data-label="Preprod Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Preprod Status</label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </details>
 
-    <div class="space-y-3 rounded-xl border border-slate-700/60 bg-slate-800/40 p-4">
-      <p class="text-sm font-medium text-amber-300">Output Options</p>
-      <label class="flex items-center gap-3 cursor-pointer group">
-        <input type="radio" name="output_option" value="channel" checked class="border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50 focus:ring-offset-slate-800" />
-        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Channel</span>
-      </label>
-      <label class="flex items-center gap-3 cursor-pointer group">
-        <input type="radio" name="output_option" value="review" class="border-slate-500 bg-slate-700 text-violet-400 focus:ring-violet-500/50 focus:ring-offset-slate-800" />
-        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Review</span>
-      </label>
-      <label class="flex items-center gap-3 cursor-pointer group">
-        <input type="radio" name="output_option" value="preview" class="border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-slate-800" />
-        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Generate Report To Preview</span>
-      </label>
-    </div>
+    <!-- Schedule Report section (collapsed by default) -->
+    <details class="group/schedule rounded-xl border border-slate-700/60 bg-slate-800/40 overflow-hidden" id="section_schedule">
+      <summary class="flex items-center justify-between gap-2 cursor-pointer list-none px-4 py-3 text-sm font-medium text-cyan-300 hover:bg-slate-700/40 transition-colors [&::-webkit-details-marker]:hidden">
+        <span>Schedule Report</span>
+        <svg class="w-4 h-4 shrink-0 text-slate-500 transition-transform group-open/schedule:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+      </summary>
+      <div class="px-4 pt-4 pb-4 space-y-5 border-t border-slate-600/60">
+        <p class="text-xs text-slate-500">Optional. Set report start and end date. Choose daily run time. Leave empty to run now.</p>
+        <div class="flex items-center gap-2 rounded-lg bg-slate-900/60 px-3 py-2 border border-slate-600/60">
+          <span class="text-xs font-medium text-slate-400">Frequency</span>
+          <span class="text-sm text-cyan-300">Daily</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div class="space-y-1.5">
+            <label for="schedule_start_date" class="block text-sm font-medium text-slate-300">Start Date</label>
+            <input
+              type="date"
+              id="schedule_start_date"
+              name="schedule_start_date"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors [color-scheme:dark]"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label for="schedule_end_date" class="block text-sm font-medium text-slate-300">End Date</label>
+            <input
+              type="date"
+              id="schedule_end_date"
+              name="schedule_end_date"
+              class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors [color-scheme:dark]"
+            />
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="block text-sm font-medium text-slate-300">Time (Daily Run)</label>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="schedule_start_hour" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark]">
+              <option value="12">12</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option>
+            </select>
+            <span class="text-slate-400">:</span>
+            <select id="schedule_start_minute" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark] min-w-[4rem]">
+              <option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option>
+              <option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option>
+              <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option>
+              <option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option>
+              <option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option>
+              <option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
+            </select>
+            <select id="schedule_start_ampm" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark]">
+              <option value="AM">AM</option><option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500">Report will run daily at the selected time between start and end date. Ensure the app is running for scheduled runs.</p>
+      </div>
+    </details>
+
+    <!-- Output Options section (collapsed by default) -->
+    <details class="group/output rounded-xl border border-slate-700/60 bg-slate-800/40 overflow-hidden" id="section_output">
+      <summary class="flex items-center justify-between gap-2 cursor-pointer list-none px-4 py-3 text-sm font-medium text-cyan-300 hover:bg-slate-700/40 transition-colors [&::-webkit-details-marker]:hidden">
+        <span>Output Options</span>
+        <svg class="w-4 h-4 shrink-0 text-slate-500 transition-transform group-open/output:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+      </summary>
+      <div class="px-4 pt-4 pb-4 space-y-4 border-t border-slate-600/60">
+        <label class="flex items-center gap-3 cursor-pointer group">
+          <input type="radio" name="output_option" value="channel" checked class="border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50 focus:ring-offset-slate-800" />
+          <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Channel</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer group">
+          <input type="radio" name="output_option" value="review" class="border-slate-500 bg-slate-700 text-violet-400 focus:ring-violet-500/50 focus:ring-offset-slate-800" />
+          <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Review</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer group">
+          <input type="radio" name="output_option" value="preview" class="border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-slate-800" />
+          <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Generate Report To Preview</span>
+        </label>
+      </div>
+    </details>
 
     <div id="review_options" class="hidden space-y-3 rounded-xl border border-violet-500/30 bg-slate-800/40 p-4">
       <p class="text-sm font-medium text-violet-300">Post Report To Review</p>
       <div>
         <div class="flex items-center gap-1.5 mb-1.5">
-          <label for="slack_user_id" class="text-sm font-medium text-cyan-300">Slack User Id <span class="text-rose-400">*</span></label>
+          <label for="slack_user_id" class="text-sm font-medium text-cyan-300">Slack User ID <span class="text-rose-400">*</span></label>
           <span class="group/userinfo relative inline-flex">
             <svg class="w-4 h-4 text-slate-500 hover:text-violet-400 cursor-help transition-colors" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
@@ -330,6 +404,25 @@
     const outputOption = document.querySelector('input[name="output_option"]:checked')?.value || 'preview';
     const slackUserId = document.getElementById('slack_user_id').value.trim();
     const reportOutputKeys = (document.getElementById('report_output_keys').value || '').trim();
+    function time12to24(hour, minute, ampm) {
+      var h = parseInt(hour, 10);
+      var m = parseInt(minute, 10) || 0;
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':00';
+    }
+    const scheduleStartDate = document.getElementById('schedule_start_date').value.trim();
+    const scheduleEndDate = document.getElementById('schedule_end_date').value.trim();
+    const startHour = document.getElementById('schedule_start_hour').value;
+    const startMinute = document.getElementById('schedule_start_minute').value;
+    const startAmPm = document.getElementById('schedule_start_ampm').value;
+    const time24 = time12to24(startHour, startMinute, startAmPm);
+    let scheduleStart = null;
+    let scheduleEnd = null;
+    if (scheduleStartDate && startHour) scheduleStart = scheduleStartDate + 'T' + time24;
+    else if (scheduleStartDate) scheduleStart = scheduleStartDate + 'T00:00:00';
+    if (scheduleEndDate && startHour) scheduleEnd = scheduleEndDate + 'T' + time24;
+    else if (scheduleEndDate) scheduleEnd = scheduleEndDate + 'T23:59:00';
 
     if (!issueKeys) {
       showRightPanelError('Please enter at least one JIRA Id.');
@@ -354,15 +447,18 @@
           slack_channel_id: slackChannelId,
           output_option: outputOption,
           slack_user_id: outputOption === 'review' ? slackUserId : '',
-          report_output_keys: reportOutputKeys ? reportOutputKeys.split(',') : []
+          report_output_keys: reportOutputKeys ? reportOutputKeys.split(',') : [],
+          schedule_start: scheduleStart,
+          schedule_end: scheduleEnd,
+          frequency: 'daily'
         })
       });
       const data = await res.json();
 
       if (data.success) {
-        var msg = 'Report generated (preview).';
-        if (data.posted_channel) msg = 'Report generated and posted to channel.';
-        else if (data.posted_review) msg = 'Report generated and posted to review.';
+        var msg = data.scheduled ? (data.message || 'Report scheduled.') : 'Report generated (preview).';
+        if (!data.scheduled && data.posted_channel) msg = 'Report generated and posted to channel.';
+        else if (!data.scheduled && data.posted_review) msg = 'Report generated and posted to review.';
         showRightPanelSuccess(msg);
         reportPreview.textContent = data.report || '';
         resultLog.textContent = data.log || '';

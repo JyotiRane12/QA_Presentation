@@ -2,144 +2,228 @@
 
 ## Scope
 
-- **Issues:** CEPI-5451
+- **Issues:** SMT-51974
 
 ---
 
 ## Challenges from JIRA
 
-### CEPI-5451: Unified Reporting & Section Consolidation for Content Personalization (CPZ)
+### SMT-51974: UCE Email template to support all versions on browser and desktop app
 
-- **Status:** Deployment Completed
-- **Description (excerpt):** h2. *1. Overview*
-
-This project introduces:
-
-h3. *A. Unification*
-
-A new *“Personalized Content”* section that merges *Web PZ + App PZ* into a single unified view.
-
-h3. *B. Detailed Reporting*
-
-A brand-new *Detailed Report module* for Web PZ, aligned with capabilities already available in offsite channels like email campaigns
-
-h3. *C. Data Platform Migration*
-
-Migration of Web PZ reporting from *MongoDB → Vertica*, establishing a unified analytics backend.
-
-h3. *D. Transitional Behavior (30-day...
+- **Status:** Released
+- **Description (excerpt):** UCE Email template to support all versions on mobile and windows system...
 
 **Comments:**
-- *nitin.patil:* [~accountid:5fdae4d1d36496013901b6d0] pls chk tkt has been released on US idc.
-- *Aravinda V:* [~accountid:557058:1ca0f336-7299-49bb-a5bf-1b589d94022e] We are getting audience id in detailed reprort issue on production we need to do hot fix, can you please go give approval for release .
+- *RajeshRaikar:* [~accountid:5c8208833fb39d723db26978]  As discussed , please verify below issue in STG ,
+Add the proof if its working then move ticket for ready for QA
+[https://netcoresolutions.atlassian.net/browse/SMT-54441|https://netcoresolutions.atlassian.net/browse/SMT-54441|smart-link] 
+[https://netcoresoluti
+- *Nikunj V. Pandit:* STG1 proof with {{uce_optimise_html_enabled}} disabled and MJML enabled
+[https://app.emailonacid.com/app/acidtest/mccAFE4LiKVNqRfN6DEO13cpfBP9xRWKjnmpU0asbZb2n/list|https://app.emailonacid.com/app/acidtest/mccAFE4LiKVNqRfN6DEO13cpfBP9xRWKjnmpU0asbZb2n/list]
+- *Ujjwal Rajpal:* code review done with @Nikunj V. Pandit for MJML flag.
+- *Nikunj V. Pandit:* {{uce_mjml_enabled}}flag is added to enable/disable MJML conversion.
+- *Jyoti Rane:* QRB Done.
+- *RajeshRaikar:* !image-20260105-101553.png|width=715,alt="image-20260105-101553.png"!
 - *Prashanth:* Pls go ahead
-- *nitin.patil:* [~accountid:557058:25134401-4f16-4dc4-940b-c43f77094035] [~accountid:5fdae4d1d36496013901b6d0] pls chk smartech-app has been released on US and IND idc.
-- *Aravinda V:* Points got on review and fixed : 
+- *RajeshRaikar:* IND idc evidence with flyflair template
+[https://app.emailonacid.com/app/acidtest/P39RD64fvkZybrtbNe9qD995JkAgLPKgA4ncdVguLav6w/list|https://app.emailonacid.com/app/acidtest/P39RD64fvkZybrtbNe9qD995JkAgLPKgA4ncdVguLav6w/list]
 
-h3. _1. Submitted (Total Responses) Column_
+MJML_enable_ODO_disable_with_picker
+[https://app.emailonacid.com/app/acid
+- *RajeshRaikar:* US idc evidence with flyflair template
+[https://app.emailonacid.com/app/acidtest/PTMeYxLFb6of9k7WBVayYGSZFQ4ZsOQrhc0la90OShoRc/list|https://app.emailonacid.com/app/acidtest/PTMeYxLFb6of9k7WBVayYGSZFQ4ZsOQrhc0la90OShoRc/list]
+MJML_with basic_elements
+[https://app.emailonacid.com/app/acidtest/dYhvLvjc
+- *Deepesh:* as per [~accountid:61b9bbdb57d5c3007119f38f] the GA will be done around Feb months
 
-* _Current Behavior_: It will be 0 only for inline if no submitted data is present; otherwise, it is NA for the summary.--Issue fixed 
-
-h3. _2. Conversion Column Behavior_
-
-* _Current_: Displays Total Conversions for CPZ
-- *Aravinda V:* ON IND idc : 
-
-!image-20260108-060404.png|width=720,alt="image-20260108-060404.png"!
-
-!image-20260108-060357.png|width=720,alt="image-20260108-060357.png"!
-
-!image-20260108-060350.png|width=720,alt="image-20260108-060350.png"!
-
-ON US idc: 
-
-!image-20260108-060458.png|width=811,alt="image-20260108-06
-- *Anujkumar Pandey:* Hi [~accountid:615ea6ab9cdb930072952da0] 
-Please release smartech-migration branch (CEPI-6642) on Ind and US IDC.
-
-RCA: Yesterday, There was release of [https://netcoresolutions.atlassian.net/browse/CEPI-5451|https://netcoresolutions.atlassian.net/browse/CEPI-5451|smart-link]. which has deployed som
-- *nitin.patil:* [~accountid:557058:25134401-4f16-4dc4-940b-c43f77094035] [~accountid:609bb8b15d67f20069ca40e0] pls chk 2 to 5 steps has been released on EU idc.
-- *ajay yad:* [~accountid:612f68e7b1894f007173224f] [~accountid:5fdae4d1d36496013901b6d0] your tkt has been released on all IDC
-- *Aravinda V:* On EU idc: 
-
-!image-20260114-115119.png|width=831,alt="image-20260114-115119.png"!
-
-!image-20260114-115135.png|width=811,alt="image-20260114-115135.png"!
-
-!image-20260114-115238.png|width=811,alt="image-20260114-115238.png"!
-
-[^41910-Campaign_Multi_Web_cpz_Summary_20260114-c6c52b4d-784a-4d0b-87ff-e9
+asked SRE to enabled for [https://netcore.freshdesk.com/a/tickets/4922591|https://netcore.freshdesk.com/a/tickets/4922591|smart-link] given customer as well - ringgitplus_cee
 
 **Linked issues:**
-- Polaris datapoint work item link: **CEPI-5433** — CPZ: Inline Widgets Milestone 2 (Deployment Completed)
-- Relates: **SMT-54242** — Form submission error  (Released)
-- Relates: **SMT-54249** — Getting 502 bad gateway , api calls are failed for Personalised content on pod2 (Released)
-- Relates: **SMT-54253** — Operator column is missing from direct download of summary report (Released)
-- Relates: **SMT-54257** — For Detailed report in campaign details, website ddm option is missing in Export report  (Released)
-- Relates: **SMT-54334** — Event is passed from Js but in Vertica DB data not inserted (Released)
-- Blocks: **LED-25** — Reports not Received in email for the detailed report on WEBCPZ . (Closed)
-- Relates: **LED-28** — Getting 502 Bad gateway for user exists api call (Closed)
-- Relates: **SMT-54398** — [CPZ report]:Campaign names shows outside the box under campaign download popup window  (Released)
-- Relates: **SMT-54399** — [CPZ report]: Total response count not getting on summary reports but count is shown in campaign listing dashboard   (Released)
-- Relates: **SMT-54402** — [CPZ report]: Performance/ Report view api calls are taking too much time to load the the count  (Released)
-- Relates: **SMT-54421** — [CPZ report] : The counts not loading on webpersonalization listing page  (Released)
-- Relates: **SMT-54428** — [CPZ report] Getting null data in get personalization api call on pod2 (Released)
-- Relates: **SMT-54431** — [CPZ report] : Not getting conversion and revenue count for content personalization on pod2 (Released)
-- Relates: **LED-36** — Not getting OTP for download report in download log for web_cpz (Closed)
-- Relates: **SMT-54472** — [CPZ report] : The conversion and revenue count not shown in view report for control group enabled campaign  (DEVELOPMENT IP)
-- Relates: **SMT-54475** — [CPZ report]: IP address is not getting shown in detailed report download for the form submission users (Released)
-- Relates: **SMT-54481** — [CPZ report] All the tags shown in campaign creation page are not shown under tag section in down load report  (Ready for QA)
-- Relates: **SMT-54497** — for web-cpz Summary report after download getting web-message summary report with empty data (Released)
-- Relates: **SMT-54498** — web campaign priority giving error toast  (DEVELOPMENT IP)
-- Relates: **SMT-54520** — tags value displayed null in summary report (Released)
-- Relates: **SMT-54523** — [CPZ report]: Getting undefined when use click on apply changes for recently viewed widget and inline widget on pod2 (Released)
-- Relates: **SMT-54524** — website and tag is empty in downloaded summary report (Released)
-- Relates: **LED-39** — [CPZ report]: Getting undefined when use click on apply changes for recently viewed widget and inline widget on pod2 (Closed)
-- Relates: **SMT-54532** — [CPZ report] Unable to download the summary reports when user select all campaign check box and click on download summary report (Released)
-- Blocks: **SMT-54534** — [CPZ report]: User cant able to donwload the direct summary reports for web pz when user selects all the campaign checkbox and getting toaster error message (Released)
-- Relates: **SMT-54541** — [CPZ report] Getting no data found in the campaign name section when user selects all the tags in download report section  (Released)
-- Relates: **SMT-54567** — [CPZ report] : conversion count and revenue counts are missmatch between dashboard and vertica db  (Released)
-- Relates: **LED-45** — Not able to create amazon S3 bucket on pod2  (Closed)
-- Relates: **SMT-54592** — scheduled summary report for months getting empty data (Released)
-- Relates: **SMT-54670** — [CPZ report] : Report download for GCS is failed on pod2  (Released)
-- Blocks: **LED-62** — Lambda not getting updated (Closed)
-- Blocks: **LED-63** — Facing access denied issue (Closed)
-- Relates: **LED-69** — [CPZ report]: Getting 502 bad gate way error for the CPZ editor  (Closed)
-- Relates: **LED-70** — [CPZ report] : user_exists api call failing on pod2 (Closed)
-- Relates: **SMT-54865** — [CPZ report]: Getting error in EL for the encryption website events on pod2  (Released)
-- Relates: **SMT-54868** — [APP-CPZ]:Issue with the UI counts are not showing on for Personalized content for APZ campaign (Released)
-- Relates: **SMT-54990** — [Personalized content]: Issue with filter icon with dropdown (Released)
-- Blocks: **SMT-55108** — Journey-Detailed-Scheduler-Report Jobs went error. (Open)
-- Relates: **CEPI-6773** — [CPZ report] : conversion count and revenue counts are not shown in smartech panel and vertica db  (To Do)
-- Relates: **LED-154** — Generic event transformer build is taking more than 2 hours  on pod2  (Closed)
-- Relates: **LED-156** — Getting conflict issues for smartech angular and smartech app components due to the “Squash commits” option is not selected (In Progress)
-- Relates: **SMT-55529** — Generic events are failed in EL for CPZ  (Open)
-- Relates: **SMT-55916** — Getting NA in detailed report for the Browser, device, page url columns for CPZ report  for view and click activities. (Released)
-- Relates: **LED-186** — CPZ events not processed on EU idc due to message router setup is not done (Closed)
+- Relates: **SMT-51647** — flyflaircee || Outlook compatibility issue in UCE Email (Released)
+- Blocks: **PEDS-10817** — Email formatting error for outlook email : Ticketpro (Closed - Waiting for Permanent Resolution)
+- Relates: **SMT-54441** — Unable to save email template and getting error in save_template API (Released)
+- Relates: **SMT-54448** — Button is not properly shown in email   (On Hold)
+- Relates: **SMT-54449** — Email not shown properly in desktop outlook  (Released)
+- Relates: **SMT-54450** — Product feed data is broken in test mail (Released)
+- Relates: **SMT-54557** — Table Layout Rendering Issue (Released)
+- Relates: **SMT-54559** — Table is missing issue (Released)
+- Relates: **SMT-54560** — Image not rendering  issue (On Hold)
+- Relates: **SMT-54561** — Inside a two-column layout image is not rendering issue (Released)
+- Relates: **SMT-54562** — Two-column layout is not rendering properly (Released)
+- Relates: **SMT-54580** — Block border and Element border are not shown in the Preview  (On Hold)
+- Relates: **SMT-54582** — The Background Image(For element) is not visible in the preview (On Hold)
+- Relates: **SMT-54584** — Paragraph Text Missing in Display (Released)
+- Relates: **SMT-54586** — Hidden Element Still Visible on Desktop View (Released)
+- Relates: **SMT-54587** — Image Overlapping Inside 4-Column Layout (Released)
+- Relates: **SMT-54588** — All Layout(2,3,4) Types Display Horizontally Instead of Column View (Released)
+- Relates: **SMT-54589** — Individual Elements Not Rendering in Test Emailonacid mail (Released)
+- Relates: **SMT-54591** — Customized Social Icon (GIF) Breaks Inside 4-Column Layout (On Hold)
+- Relates: **SMT-54596** — when we add product feed with 3 image and 3 products with list view then product feed block not shown in editor (Released)
+- Relates: **SMT-54597** — Product feed block background color not getting applied in live preview (On Hold)
+- Relates: **SMT-54598** — Product feed block not shown properly ,product feed layout color getting overlap in few desktop browsers (Development Review)
+- Relates: **SMT-54599** — Product feed with Two column and 3 column layout not shown properly  in few devices (Released)
+- Relates: **SMT-54600** — Product feed button is not shown properly with 3 column layout  in few devices (Released)
+- Relates: **SMT-54625** — Italic Formatting Not Applied to Button Text in Product fed static template (Released)
+- Relates: **SMT-54628** — Image Overlap and Layout Break in Mobile Preview for Left/Right Image Alignment (Released)
+- Relates: **SMT-54645** — Coupon Block Background Color Not Displayed (Released)
+- Relates: **SMT-54654** — Image not shown in product collection template  in outlook (Released)
+- Relates: **SMT-54702** — AMP fallback mail not rendering properly in outlook (Released)
+- Relates: **SMT-54708** — In the Product Picker Button, the alignment is not working  (On Hold)
+- Relates: **SMT-54772** — [Flyfair-UCE] 3-Column Layout Rendering Issue in Preview (On Hold)
+- Relates: **SMT-54773** — [Flyfair-UCE] Padding Issue in Ediator and Mobile Preview (Released)
+- Relates: **SMT-54774** — [Flyfair-UCE] Footer “Contact Us” Spacing Mismatch (Released)
+- Relates: **SMT-54776** — [Flyfair-UCE] Image Width Issue in 2-Column Layout (Editor & Preview) (Released)
+- Relates: **SMT-54834** — Default Email Body Border Not Visible in preview (Released)
+- Relates: **SMT-54877** — Layout Breaks After Applying Background Image (On Hold)
+- Relates: **SMT-54887** — [Flyfair-UCE] 3-Column Layout Showing Duplicate Row in Desktop Outlook versions (On Hold)
+- Relates: **SMT-54889** — [Flyfair-UCE] 2-Column Layout and Image are missing (Released)
+- Relates: **SMT-55002** — Table Centre Alignment Issue (Open)
+- Relates: **SMT-55009** — Yahoo Mail Content Overflow & Image Overlap Issue (On Hold)
+- Relates: **SMT-55010** — Table Background Image Not Applying (On Hold)
+- Relates: **SMT-55011** — Product Picker Frame Left Alignment Issue (Open)
+- Relates: **SMT-55012** — Product Picker Content Breakage Issue (Open)
+- Relates: **SMT-55013** — Product Picker Image Overlapping in Mobile View (Open)
+- Relates: **SMT-55040** — Flyflair template getting clipped in gmail (Released)
+- Relates: **SMT-55057** — when we apply AB ,BA and A/B  property , mobile view and desktop view not working  properly (Open)
+- Relates: **SMT-55058** — In flyflair email template   icon image alignment not proper in outlook (On Hold)
+- Relates: **SMT-55095** — [ODO] : footer mail link not shown properly in mobile and outlook devices (Released)
+- Relates: **SMT-55109** — [ODO]: Custom HTML Content Missing in Header Section (Released)
+- Relates: **SMT-55110** — [ODO]: Product Feed 3-Column Alignment Breaks (Released)
+- Relates: **SMT-55112** — [ODO]: “+274 More” Block Alignment Issue (Released)
+- Relates: **SMT-55113** — [ODO]: Footer Content Layout Breaks (Released)
+- Relates: **SMT-55114** — [ODO]: 2-Column Layout Breaks Above Footer Section (Released)
+- Relates: **SMT-55116** — [ODO]: Content Block Padding Issue (Released)
+- Relates: **SMT-55117** — [ODO]: Template Content Missing (Released)
+- Relates: **SMT-55124** — [ODO]: Header Timer Not Visible (Released)
+- Relates: **SMT-55174** — [ODO]: 2-Column Layout of Header Breaks in Mobile Preview – Timer and Content Show Row-wise (Released)
+- Relates: **SMT-55228** — Two column layout not shown properly in  AMP fallback mobile  view (On Hold)
+- Relates: **SMT-55236** — [No flag] Column Border Color Not Displayed in Preview (On Hold)
+- Relates: **SMT-55261** — ODO template getting clipped when we receive email via journey (On Hold)
+- Relates: **SMT-55263** — [No flags] Two-Column Layout Renders as Mobile View in Yahoo Mail on Desktop (On Hold)
+- Relates: **SMT-55291** — [Flyflair] 3-Column Layout Break in Outlook App iPhone 13 (On Hold)
+- Relates: **SMT-55334** — BA mobile layout styles are applied in Desktop Preview when custom width is set to 100% (On Hold)
+- Relates: **SMT-55335** — Mobile Editor shows A|B column layout instead of default AB when Desktop custom width is applied (On Hold)
+- Relates: **SMT-55357** — [ODO - enable] Two-Column Layout Renders as Mobile View in Mobile Editor and Preview Despite Desktop Layout Enabled (Open)
+- Relates: **SMT-55365** — Email content not shown properly when clipped (Open)
+- Relates: **SMT-55378** — In AMP fallback , column background color not getting applied (Open)
+- Relates: **SMT-55379** — [No flag] Mobile Editor shows A|B layout instead of default AB for two-column layout when Desktop column width is applied and Button element is present (Open)
+- Relates: **SMT-55385** — [No flag] 3-column and 4-column layouts render as columns in mobile view in Acid preview instead of stacking one by one (Open)
+- Relates: **SMT-54833** — [UCE] Coupon Background Image Removed When Editing (Gradient Style) (Open)
+- Relates: **SMT-54864** — [UCE] Personalization UI Breaks After Adding Product Feed in the Editor (Open)
+- Relates: **SMT-55260** — [UCE] Column Background Image Removed When Column Padding Is Cleared in Desktop Preview. (Open)
+- Relates: **SMT-54577** — [UCE] Layout borders are not visible in Preview (Open)
+- Relates: **SMT-55393** — Dynamic block not shown in editor preview when we enable MJML flag (Open)
+- Relates: **SMT-55417** — [Dynamic block] Dynamic Condition Signature Not Displayed in Live Preview (Open)
+- Relates: **SMT-55427** — [Dynamic block] Product Feed Not Rendering in Desktop Version on Email on Acid (Open)
+- Relates: **SMT-55430** — [Dynamic block] Personalization Not Appended Correctly – Shows [% Integer %] in Test Email (Open)
+- Relates: **SMT-55449** — [Product feed] Product Feed Not Rendering in Email on Acid Preview (With or Without MJML) (Open)
+- Relates: **SMT-55552** — [Dynamic block] Dynamic Block Not Hidden When Personalization Attribute Value Is Null (Open)
+- Relates: **SMT-55563** — table column text alignment is not getting applied properly when MJML is enabled (Open)
+- Relates: **SMT-55650** — when we enable MJML flag , social media element allignment not working properly (Open)
+- Relates: **SMT-55681** — [ODO] Template content missing in Microsoft 365 (Edge, Windows 10) (Open)
+- Relates: **SMT-55973** — [MJML enable]Column layout breaks when personalization is added (Open)
 
 
 ---
 
 ## Linked issues summary
 
-- **Total linked issues (unique):** 45
+- **Total linked issues (unique):** 83
 
 ### By issue type
 
-- **Bug:** 42
-- **Story:** 2
-- **PEDS Internal:** 1
+- **Bug:** 68
+- **PEDS Internal:** 15
 
 ### By priority
 
-- **P0:** 14
-- **P1:** 31
+- **P0:** 46
+- **P1:** 37
+
+---
+
+## Challenges from Slack (project channel)
+
+- **1771328537** | USLACKBOT: <@U0AFJCBQEDS> joined #qa-challenges. They’re also new to Netcore Cloud Private Limited.
+- **1771327771** | U0484KCV7UH: <@U04PX3PTXU7>:
+Editor is breaking in preprod after deploying merge branch  protected-CEPI-797+SMT-52355
+why stg1 url is called in preprod :alert_slow:
+*This is blocking preprod testing of CloudFront*
+- **1771327749** | U0484KCV7UH: QA update : *04-12-2025*
+1. SMT-51974 --- UCE Email template to support all versions on browser and desktop app
+Total  issue : 25
+Ready for QA : 1
+Open issues : 4
+Dev Ip: 8
+Blocker issue : 0
+Test cove
+- **1771327720** | U0484KCV7UH: *Hi <@U047QCRAZAT>* *<@U0490SPM8E4>* 
+I want to highlight a critical dependency risk impacting multiple high-priority items.
+Yesterday, Nikunj shared updates on several open P0/P1 issues (<https://net
+- **1771327686** | U0484KCV7UH: <@U04887CNEH3> <@U04A6DFG4BS> Still issues not fixed, please check on priority:alert_slow:
+<https://netcoresolutions.atlassian.net/browse/SMT-54586>
+<https://netcoresolutions.atlassian.net/browse/SMT-
+- **1771327620** | U0484KCV7UH: QA update : *02-12-2025*
+1. SMT-51974 --- UCE Email template to support all versions on browser and desktop app
+Total  issue : 25
+Ready for QA : 1
+Open issues : 5
+Dev Ip: 7
+Blocker issue : 0
+Test cove
+- **1771327590** | U0484KCV7UH: <@U096VFD0AJW>, <@U048ACSQXPD>, :alert_slow:
+<@U084KL1EWG6> is following up on this since yesterday at least we can expect the acknowledgement.
+Kindly let us know the challenge so that we can plan and
+- **1771327556** | U0484KCV7UH: <@U04A6DFG4BS> Button is not properly shown in email --- &gt; Still issue not fixed for the following devices:
+Here, the drag and drop without modification button shows as a dot, but the modified butt
+- **1771327524** | U0484KCV7UH: <@U047YU0J4NP> : Below issues <@U04887CNEH3> need to check
+<https://netcoresolutions.atlassian.net/browse/SMT-54654>
+<https://netcoresolutions.atlassian.net/browse/SMT-54645>
+<https://netcoresolutions
+- **1771327501** | U0484KCV7UH: QA update : 01*-12-2025*
+1. SMT-51974 --- UCE Email template to support all versions on browser and desktop app
+Total  issue : 24
+Ready for QA : 7
+Open issues : 4
+Dev Ip: 4
+Blocker issue : 0
+Test cove
+- **1771327469** | U0484KCV7UH: <@U051JV1J02D> <@U0490AQ5QFJ> *coupon is working for test  mail , unable to send via broadcast , please chec*k
+- **1771327386** | U0484KCV7UH: DEV update : *29-11-2025*
+SMT-51974 --- UCE Email template to support all versions on browser and desktop app
+Total  issue : 21
+Ready for QA : 8
+Open issues : 4
+On hold : 9 (Email not rendering proper
+- **1771327359** | U0484KCV7UH: QA update : *29-11-2025*
+1. SMT-51974 --- UCE Email template to support all versions on browser and desktop app
+Total  issue : 21
+Ready for QA : 3
+Open issues : 18
+Blocker issue : 0
+Test coverage: 60%
+- **1771327320** | U0484KCV7UH: <@U047J3QUCR4> Please ignore
+- **1771327310** | U0484KCV7UH: *QA update :* 28-11-2025
+1. SMT-51974 --- UCE Email template to support all versions on browser and desktop app
+Open issue : 16
+Ready for QA : 0
+Blocker issue : 0
+
+Test coverage: 50%
+Pending:
+Coupon b
+- **1771327285** | U0484KCV7UH: *QA update :* 27-11-2025
+1. SMT-51974 --- UCE Email template to support all versions on browser and desktop app
+Open issue : 8
+Ready for QA : 0
+Blocker issue : 0
 
 ---
 
 ## Summary for presentation
 
 - Total issues reviewed: 1
-- Total linked issues (unique): 45
+- Total linked issues (unique): 83
+- Slack messages included: 16
 
 Use the sections above as talking points: JIRA comments and linked issues often surface blockers, env issues, and scope changes.

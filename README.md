@@ -134,6 +134,22 @@ If you see `AI API failed for CEPI-27: Connection error` and the **AI generated 
 4. **Skip AI**  
    Run without `--ai`; the CSV will still have all other columns. The **AI generated summary** column will be empty.
 
+## QA Daily Report (daily_qa_report.py)
+
+Generates a **QA Daily Report** in a fixed format and posts it to Slack. Uses JIRA (issue, changelog, linked issues) and today’s Slack channel messages.
+
+**Report fields:** QA Update date, JIRA ID, JIRA Title, Ready for QA Date, QA start Date, One Round Of testing completion date, Targetted Release Date, Total Bugs, With DEV Bug Counts, With QA, Challenges (Slack today summary), Environment Issue (LED count + any LED in Open status).
+
+Slack app needs **`chat:write`** (and `chat:write.public` if posting to a public channel) in addition to `channels:history`.
+
+```bash
+python daily_qa_report.py --issues SMT-51974
+python daily_qa_report.py --issues PROJ-1,PROJ-2 --no-post    # build only
+python daily_qa_report.py --issues SMT-51974 --dry-run       # print to stdout
+```
+
+Uses **`SLACK_CHANNEL_ID`** for both reading today’s messages and posting the report (same channel).
+
 ## Options
 
 - `--project PROJ` – JIRA project key; fetches recent issues (respects `--limit`).
