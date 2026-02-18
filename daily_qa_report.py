@@ -347,7 +347,27 @@ def _preprod_status(issue: dict) -> str:
     return "Pending"
 
 
-def build_report(jira_id: str, issue: dict, linked: list[dict], dates: dict, challenges: str, led_count: int, open_led_keys: list[str], today_str: str) -> str:
+# Optional report section keys (mandatory: QA Update, JIRA ID, JIRA Title are always included)
+OPTIONAL_SECTION_KEYS = frozenset({
+    "ready_for_qa_date", "qa_start_date", "one_round_of_testing_completion",
+    "total_bugs", "bugs_with_dev", "bugs_with_qa", "closed_bugs",
+    "challenges", "environment_issue", "targetted_release_date", "uat_status", "preprod_status",
+})
+
+
+def build_report(
+    jira_id: str,
+    issue: dict,
+    linked: list[dict],
+    dates: dict,
+    challenges: str,
+    led_count: int,
+    open_led_keys: list[str],
+    today_str: str,
+    include_optional: set[str] | None = None,
+) -> str:
+    """Build report text. Mandatory: QA Update, JIRA ID, JIRA Title. Optional sections only if key in include_optional."""
+    include_optional = include_optional or set()
     fields = issue.get("fields") or {}
     title = (fields.get("summary") or "").strip()
     total_bugs, with_dev, with_qa, closed_bugs = bug_counts(linked)
@@ -365,24 +385,39 @@ def build_report(jira_id: str, issue: dict, linked: list[dict], dates: dict, cha
         "",
         f"*JIRA ID* – {jira_id}",
         f"*JIRA Title* – {title}",
-        "",
-        f"*Ready For QA Date* – {_format_date(dates['ready_for_qa'])}",
-        f"*QA Start Date* – {_format_date(dates['qa_start'])}",
-        f"*One Round Of Testing Completion* – {_format_date(dates['bug_fixing_ip']) if dates['bug_fixing_ip'] else 'Pending'}",
-        "",
-        f"*Total Bugs* – {total_bugs}",
-        f"*Bugs With Dev* – {with_dev}",
-        f"*Bugs With QA* – {with_qa}",
-        f"*Closed Bugs* – {closed_bugs}",
-        "",
-        f"*Challenges* – {challenges}",
-        "",
-        f"*Environment Issue* – {env_line}",
-        "",
-        f"*Targetted Release Date* – {_format_date(dates['target_release'])}",
-        f"*UAT Status* – {uat_status}",
-        f"*Preprod Status* – {preprod_status}",
     ]
+    if "ready_for_qa_date" in include_optional or "qa_start_date" in include_optional or "one_round_of_testing_completion" in include_optional:
+        block.append("")
+    if "ready_for_qa_date" in include_optional:
+        block.append(f"*Ready For QA Date* – {_format_date(dates['ready_for_qa'])}")
+    if "qa_start_date" in include_optional:
+        block.append(f"*QA Start Date* – {_format_date(dates['qa_start'])}")
+    if "one_round_of_testing_completion" in include_optional:
+        block.append(f"*One Round Of Testing Completion* – {_format_date(dates['bug_fixing_ip']) if dates['bug_fixing_ip'] else 'Pending'}")
+    if "total_bugs" in include_optional or "bugs_with_dev" in include_optional or "bugs_with_qa" in include_optional or "closed_bugs" in include_optional:
+        block.append("")
+    if "total_bugs" in include_optional:
+        block.append(f"*Total Bugs* – {total_bugs}")
+    if "bugs_with_dev" in include_optional:
+        block.append(f"*Bugs With Dev* – {with_dev}")
+    if "bugs_with_qa" in include_optional:
+        block.append(f"*Bugs With QA* – {with_qa}")
+    if "closed_bugs" in include_optional:
+        block.append(f"*Closed Bugs* – {closed_bugs}")
+    if "challenges" in include_optional:
+        block.append("")
+        block.append(f"*Challenges* – {challenges}")
+    if "environment_issue" in include_optional:
+        block.append("")
+        block.append(f"*Environment Issue* – {env_line}")
+    if "targetted_release_date" in include_optional or "uat_status" in include_optional or "preprod_status" in include_optional:
+        block.append("")
+    if "targetted_release_date" in include_optional:
+        block.append(f"*Targetted Release Date* – {_format_date(dates['target_release'])}")
+    if "uat_status" in include_optional:
+        block.append(f"*UAT Status* – {uat_status}")
+    if "preprod_status" in include_optional:
+        block.append(f"*Preprod Status* – {preprod_status}")
     return "\n".join(block)
 
 
@@ -415,6 +450,14 @@ def run(issue_keys: list[str], post: bool = True, dry_run: bool = False) -> str:
         print("Slack Channel ID not found or incorrect: invalid format")
         raise SystemExit("Slack Channel ID is incorrect or empty. Report was not posted.")
 
+    report_keys_env = (os.getenv("REPORT_OUTPUT_KEYS") or "").strip()
+    include_optional = set()
+    if report_keys_env:
+        for k in report_keys_env.split(","):
+            k = k.strip()
+            if k and k in OPTIONAL_SECTION_KEYS:
+                include_optional.add(k)
+
     today_str = _format_date(datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     reports = []
     for jira_id in keys_to_process:
@@ -427,7 +470,7 @@ def run(issue_keys: list[str], post: bool = True, dry_run: bool = False) -> str:
         slack_messages = fetch_slack_messages(SLACK_CHANNEL_ID) if SLACK_CHANNEL_ID else []
         slack_today = filter_messages_today(slack_messages)
         challenges = summarize_challenges(slack_today)
-        report = build_report(jira_id, issue, linked, dates, challenges, led_count, open_led_keys, today_str)
+        report = build_report(jira_id, issue, linked, dates, challenges, led_count, open_led_keys, today_str, include_optional=include_optional)
         reports.append(report)
     full_report = "\n\n---\n\n".join(reports)
 

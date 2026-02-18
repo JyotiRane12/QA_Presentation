@@ -1,10 +1,12 @@
 ## Slide 1: QA Challenges – Overview by Cause
-- High volume of bugs leads to increased workload.
-- Compatibility issues across multiple versions hinder progress.
-- Resource constraints affect testing efficiency.
+- High volume of bugs, 68 total issues reported.
+- Critical issues: 37 P0 and 31 P1 requiring urgent resolution.
+- Deployment impacted by recent merge affecting CloudFront testing.
+- Compatibility issues with less common email clients hinder progress.
+- N/A in environment challenges and resource limitations noted.
 
 ## Slide 2: QA Challenges – Details (Developer, Dev-ops, Environment, Resource)
-- Developer: High bug count (68 total, 37 critical, 31 high priority).
-- Dev-ops: Compatibility challenges across browser and desktop app versions.
-- Environment: None (0 LEDs reported).
-- Resource: Additional testing resources required to address critical issues.
+- Developer: Bug volume and code quality, especially with email template rendering.
+- Dev-ops: Merge branch deployment led to testing blockers in pre-production.
+- Environment: No LED issues reported.
+- Resource: N/A; no limitations or specific tool concerns mentioned.

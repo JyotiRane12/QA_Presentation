@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Scheduler Logs{% endblock %}
+{% block content %}
+<script type="application/json" id="scheduler-logs-data">{{ logs | tojson }}</script>
+<div class="flex flex-1 flex-col p-6 min-h-0">
+  <header class="mb-6">
+    <div class="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-medium px-3 py-1 mb-4 border border-cyan-500/20">
+      QA Daily Report → Scheduler
+    </div>
+    <h1 class="text-2xl font-bold text-white tracking-tight">Scheduler Logs</h1>
+    <p class="mt-1 text-sm text-slate-400">Scheduled QA daily report tasks</p>
+  </header>
+
+  <div class="rounded-xl border border-slate-700/60 bg-slate-900/60 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[32rem] text-left text-sm">
+        <thead>
+          <tr class="border-b border-slate-600 bg-slate-800/80">
+            <th class="px-4 py-3 font-semibold text-cyan-300">Task Type</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">JIRA ID</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Scheduler Start Date</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Scheduler End Date</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Scheduler Time (Daily)</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Report Output</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Status</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr class="border-b border-slate-700/60 hover:bg-slate-800/40 transition-colors" data-log-id="{{ log.id or '' }}">
+            <td class="px-4 py-3 text-slate-200">{{ log.task_type }}</td>
+            <td class="px-4 py-3 text-slate-200">{{ log.jira_id }}</td>
+            <td class="px-4 py-3 text-slate-300">{{ log.scheduler_start_date }}</td>
+            <td class="px-4 py-3 text-slate-300">{{ log.scheduler_end_date or '—' }}</td>
+            <td class="px-4 py-3 text-slate-300">{{ log.scheduler_time_12hr or log.scheduler_time }}</td>
+            <td class="px-4 py-3 text-slate-300 max-w-[12rem] truncate" title="{{ log.report_output_labels }}">{{ log.report_output_labels }}</td>
+            <td class="px-4 py-3">
+              {% if log.status == 'Paused' %}
+              <span class="inline-flex items-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium px-2.5 py-0.5 border border-amber-500/30">Paused</span>
+              {% elif log.status == 'Stopped' %}
+              <span class="inline-flex items-center rounded-full bg-slate-500/20 text-slate-400 text-xs font-medium px-2.5 py-0.5 border border-slate-500/30">Stopped</span>
+              {% elif log.status == 'Scheduled' %}
+              <span class="inline-flex items-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium px-2.5 py-0.5 border border-amber-500/30">Scheduled</span>
+              {% elif log.status == 'Running' %}
+              <span class="inline-flex items-center rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-medium px-2.5 py-0.5 border border-cyan-500/30">Running</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium px-2.5 py-0.5 border border-emerald-500/30">Completed</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if log.action_state == 'stopped' %}
+              <span class="text-slate-500 text-xs font-medium">Actions Not Allowed</span>
+              {% elif log.action_state == 'paused' %}
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" class="scheduler-resume rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium px-2.5 py-1.5 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors" data-id="{{ log.id }}">Resume</button>
+                <button type="button" class="scheduler-stop rounded-lg bg-slate-600/60 text-slate-300 text-xs font-medium px-2.5 py-1.5 border border-slate-500/50 hover:bg-slate-500/50 transition-colors" data-id="{{ log.id }}">Stop</button>
+                <button type="button" class="scheduler-edit rounded-lg bg-violet-500/20 text-violet-400 text-xs font-medium px-2.5 py-1.5 border border-violet-500/40 hover:bg-violet-500/30 transition-colors" data-id="{{ log.id }}">Edit</button>
+              </div>
+              {% else %}
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" class="scheduler-pause rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium px-2.5 py-1.5 border border-amber-500/40 hover:bg-amber-500/30 transition-colors" data-id="{{ log.id }}">Pause</button>
+                <button type="button" class="scheduler-stop rounded-lg bg-slate-600/60 text-slate-300 text-xs font-medium px-2.5 py-1.5 border border-slate-500/50 hover:bg-slate-500/50 transition-colors" data-id="{{ log.id }}">Stop</button>
+                <button type="button" class="scheduler-edit rounded-lg bg-violet-500/20 text-violet-400 text-xs font-medium px-2.5 py-1.5 border border-violet-500/40 hover:bg-violet-500/30 transition-colors" data-id="{{ log.id }}">Edit</button>
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-slate-500">No scheduled tasks. Schedule a report from <a href="{{ url_for('qa_daily_report') }}" class="text-cyan-400 hover:underline">QA Daily Report</a>.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="actions_message" class="hidden mt-4 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-300"></div>
+  <div id="actions_error" class="hidden mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-300"></div>
+</div>
+
+<!-- Edit task modal -->
+<div id="edit_modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm" aria-hidden="true">
+  <div class="rounded-2xl border border-slate-600 bg-slate-900 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+    <h3 class="text-lg font-semibold text-white mb-4">Edit Task</h3>
+    <form id="edit_form">
+      <input type="hidden" id="edit_id" name="id" />
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-cyan-300 mb-2">Report Output (Optional Sections)</label>
+          <div id="edit_report_output_options" class="space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-slate-600 bg-slate-800/80 p-3">
+            {% for key, label in report_output_options %}
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white">
+              <input type="checkbox" class="edit-report-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" value="{{ key }}" />
+              <span>{{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <label for="edit_start_date" class="block text-sm font-medium text-slate-300 mb-1">Start Date</label>
+          <input type="date" id="edit_start_date" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white [color-scheme:dark]" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-1">Start Time (12hr)</label>
+          <div class="flex gap-2">
+            <select id="edit_start_hour" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+              <option value="12">12</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option>
+            </select>
+            <select id="edit_start_minute" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+              <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+            </select>
+            <select id="edit_start_ampm" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+              <option value="AM">AM</option><option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="edit_end_date" class="block text-sm font-medium text-slate-300 mb-1">End Date</label>
+          <input type="date" id="edit_end_date" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white [color-scheme:dark]" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-1">End Time (12hr)</label>
+          <div class="flex gap-2">
+            <select id="edit_end_hour" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+              <option value="12">12</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option>
+            </select>
+            <select id="edit_end_minute" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+              <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+            </select>
+            <select id="edit_end_ampm" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+              <option value="AM">AM</option><option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button type="submit" class="rounded-xl bg-cyan-500/80 text-white px-4 py-2.5 text-sm font-medium hover:bg-cyan-500 transition-colors">Save</button>
+        <button type="button" id="edit_modal_cancel" class="rounded-xl border border-slate-500 text-slate-300 px-4 py-2.5 text-sm font-medium hover:bg-slate-700/50 transition-colors">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  function msg(el, text, show) {
+    el.textContent = text || '';
+    el.classList.toggle('hidden', !show);
+  }
+  var messageEl = document.getElementById('actions_message');
+  var errorEl = document.getElementById('actions_error');
+
+  function doAction(url, id) {
+    if (!id) return;
+    msg(errorEl, '', false);
+    msg(messageEl, '', false);
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (x) {
+        if (x.ok) {
+          msg(messageEl, x.data.message || 'Done.', true);
+          window.location.reload();
+        } else {
+          msg(errorEl, x.data.error || 'Request failed.', true);
+        }
+      })
+      .catch(function () {
+        msg(errorEl, 'Request failed.', true);
+      });
+  }
+
+  document.querySelectorAll('.scheduler-pause').forEach(function (btn) {
+    btn.addEventListener('click', function () { doAction('/api/scheduler-logs/pause', btn.getAttribute('data-id')); });
+  });
+  document.querySelectorAll('.scheduler-stop').forEach(function (btn) {
+    btn.addEventListener('click', function () { doAction('/api/scheduler-logs/stop', btn.getAttribute('data-id')); });
+  });
+  document.querySelectorAll('.scheduler-resume').forEach(function (btn) {
+    btn.addEventListener('click', function () { doAction('/api/scheduler-logs/resume', btn.getAttribute('data-id')); });
+  });
+
+  var logsDataEl = document.getElementById('scheduler-logs-data');
+  var logs = logsDataEl ? JSON.parse(logsDataEl.textContent || '[]') : [];
+  var editModal = document.getElementById('edit_modal');
+  var editForm = document.getElementById('edit_form');
+
+  function time12to24(hour, minute, ampm) {
+    var h = parseInt(hour, 10);
+    var m = parseInt(minute, 10) || 0;
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':00';
+  }
+
+  function parseTime24(t24) {
+    if (!t24) return { hour: '12', minute: '00', ampm: 'AM' };
+    var parts = t24.split(':');
+    var h = parseInt(parts[0], 10) || 0;
+    var m = (parts[1] || '00').slice(0, 2);
+    if (h === 0) return { hour: '12', minute: m, ampm: 'AM' };
+    if (h < 12) return { hour: String(h), minute: m, ampm: 'AM' };
+    if (h === 12) return { hour: '12', minute: m, ampm: 'PM' };
+    return { hour: String(h - 12), minute: m, ampm: 'PM' };
+  }
+
+  document.querySelectorAll('.scheduler-edit').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-id');
+      var log = logs.find(function (l) { return l.id === id; });
+      if (!log) return;
+      document.getElementById('edit_id').value = id;
+      document.getElementById('edit_start_date').value = log.scheduler_start_date || '';
+      document.getElementById('edit_end_date').value = log.scheduler_end_date || '';
+      var startT = parseTime24(log.scheduler_time);
+      document.getElementById('edit_start_hour').value = startT.hour;
+      document.getElementById('edit_start_minute').value = startT.minute;
+      document.getElementById('edit_start_ampm').value = startT.ampm;
+      document.getElementById('edit_end_hour').value = startT.hour;
+      document.getElementById('edit_end_minute').value = startT.minute;
+      document.getElementById('edit_end_ampm').value = 'PM';
+      var keys = log.report_output_keys || [];
+      editForm.querySelectorAll('.edit-report-cb').forEach(function (cb) {
+        cb.checked = keys.indexOf(cb.value) !== -1;
+      });
+      editModal.classList.remove('hidden');
+      editModal.setAttribute('aria-hidden', 'false');
+    });
+  });
+
+  document.getElementById('edit_modal_cancel').addEventListener('click', function () {
+    editModal.classList.add('hidden');
+    editModal.setAttribute('aria-hidden', 'true');
+  });
+
+  editModal.addEventListener('click', function (e) {
+    if (e.target === editModal) {
+      editModal.classList.add('hidden');
+      editModal.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  editForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var id = document.getElementById('edit_id').value;
+    var startDate = document.getElementById('edit_start_date').value;
+    var endDate = document.getElementById('edit_end_date').value;
+    var startHour = document.getElementById('edit_start_hour').value;
+    var startMinute = document.getElementById('edit_start_minute').value;
+    var startAmPm = document.getElementById('edit_start_ampm').value;
+    var endHour = document.getElementById('edit_end_hour').value;
+    var endMinute = document.getElementById('edit_end_minute').value;
+    var endAmPm = document.getElementById('edit_end_ampm').value;
+    var scheduleStart = startDate ? startDate + 'T' + time12to24(startHour, startMinute, startAmPm) : null;
+    var scheduleEnd = endDate ? endDate + 'T' + time12to24(endHour, endMinute, endAmPm) : null;
+    var keys = [];
+    editForm.querySelectorAll('.edit-report-cb:checked').forEach(function (cb) { keys.push(cb.value); });
+    msg(errorEl, '', false);
+    msg(messageEl, '', false);
+    fetch('/api/scheduler-logs/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: id,
+        report_output_keys: keys,
+        schedule_start: scheduleStart,
+        schedule_end: scheduleEnd
+      })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (x) {
+        if (x.ok) {
+          msg(messageEl, x.data.message || 'Updated.', true);
+          window.location.reload();
+        } else {
+          msg(errorEl, x.data.error || 'Update failed.', true);
+        }
+      })
+      .catch(function () {
+        msg(errorEl, 'Update failed.', true);
+      });
+  });
+})();
+</script>
+{% endblock %}
