@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}QA Project Challenges{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+  <header class="mb-10">
+    <div class="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-medium px-3 py-1 mb-4 border border-cyan-500/20">
+      JIRA + Slack → Report & Slides
+    </div>
+    <h1 class="text-3xl font-bold text-white tracking-tight">QA Project Challenges</h1>
+    <p class="mt-2 text-slate-400">Generate Markdown report, CSV, and Gamma slides from your issues</p>
+  </header>
+
+  <form id="form" class="rounded-2xl border border-slate-700/80 bg-slate-900/80 shadow-xl shadow-slate-900/50 p-6 space-y-5 backdrop-blur">
+    <div>
+      <label for="issue_keys" class="block text-sm font-medium text-cyan-300 mb-1.5">JIRA issue keys</label>
+      <input
+        type="text"
+        id="issue_keys"
+        name="issue_keys"
+        placeholder="e.g. CEPI-5451, CEPI-5452"
+        class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
+      />
+      <p class="mt-1 text-xs text-slate-500">Comma-separated list of issue keys</p>
+    </div>
+
+    <div>
+      <label for="slack_channel_id" class="block text-sm font-medium text-violet-300 mb-1.5">Slack Channel ID</label>
+      <input
+        type="text"
+        id="slack_channel_id"
+        name="slack_channel_id"
+        placeholder="e.g. C01234ABC"
+        class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60 focus:border-violet-500/50 transition-colors"
+      />
+      <p class="mt-1 text-xs text-slate-500">Overrides .env for this run (leave blank to use .env)</p>
+    </div>
+
+    <div class="space-y-3 rounded-xl border border-slate-700/60 bg-slate-800/40 p-4">
+      <p class="text-sm font-medium text-amber-300">Output options</p>
+      <label class="flex items-center gap-3 cursor-pointer group">
+        <input type="checkbox" id="generate_csv" name="generate_csv" checked class="rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50 focus:ring-offset-slate-800" />
+        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Generate report CSV</span>
+      </label>
+      <label class="flex items-center gap-3 cursor-pointer group">
+        <input type="checkbox" id="generate_slides" name="generate_slides" class="rounded border-slate-500 bg-slate-700 text-violet-500 focus:ring-violet-500/50 focus:ring-offset-slate-800" />
+        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Generate slides</span>
+      </label>
+      <label class="flex items-center gap-3 cursor-pointer group">
+        <input type="checkbox" id="publish_to_gamma" name="publish_to_gamma" class="rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500/50 focus:ring-offset-slate-800" />
+        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Publish to Gamma (5-slide PPT)</span>
+      </label>
+    </div>
+
+    <div class="pt-4 border-t border-slate-700/80">
+      <button
+        type="submit"
+        id="submit_btn"
+        class="w-full px-5 py-3.5 rounded-xl font-semibold text-base bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-lg shadow-cyan-500/20"
+      >
+        Submit
+      </button>
+    </div>
+  </form>
+
+  <div id="result" class="mt-8 hidden">
+    <div id="result_loading" class="hidden rounded-2xl border border-slate-700 bg-slate-900/80 p-6 shadow-xl">
+      <div class="flex items-center gap-3 text-slate-300">
+        <svg class="animate-spin h-6 w-6 text-cyan-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Generating report… This may take a minute.</span>
+      </div>
+    </div>
+
+    <div id="result_success" class="hidden rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-6 space-y-4 shadow-xl shadow-emerald-500/5">
+      <div class="flex items-center gap-2 text-emerald-400">
+        <svg class="w-6 h-6 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+        <span class="font-semibold">Report generated successfully</span>
+      </div>
+      <div id="download_links" class="flex flex-wrap gap-2"></div>
+      <div id="gamma_box" class="hidden p-4 rounded-xl bg-violet-500/10 border border-violet-500/30">
+        <p class="text-sm font-medium text-violet-300 mb-1">Gamma PPT (shareable)</p>
+        <a id="gamma_link" href="#" target="_blank" rel="noopener" class="text-sm text-violet-400 hover:text-violet-300 underline break-all"></a>
+      </div>
+      <details class="text-sm">
+        <summary class="cursor-pointer text-slate-500 hover:text-slate-400">Show log</summary>
+        <pre id="result_log" class="mt-2 p-4 rounded-xl bg-slate-800/80 text-slate-400 overflow-x-auto text-xs max-h-48 overflow-y-auto border border-slate-700"></pre>
+      </details>
+    </div>
+
+    <div id="result_error" class="hidden rounded-2xl border border-rose-500/30 bg-slate-900/80 p-6 space-y-3 shadow-xl shadow-rose-500/5">
+      <div class="flex items-center gap-2 text-rose-400 font-medium">
+        <svg class="w-6 h-6 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+        <span id="error_message">Something went wrong.</span>
+      </div>
+      <details class="text-sm">
+        <summary class="cursor-pointer text-slate-500 hover:text-slate-400">Show log</summary>
+        <pre id="error_log" class="mt-2 p-4 rounded-xl bg-slate-800/80 text-slate-400 overflow-x-auto text-xs max-h-48 overflow-y-auto border border-slate-700"></pre>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('form');
+  const submitBtn = document.getElementById('submit_btn');
+  const result = document.getElementById('result');
+  const resultLoading = document.getElementById('result_loading');
+  const resultSuccess = document.getElementById('result_success');
+  const resultError = document.getElementById('result_error');
+  const downloadLinks = document.getElementById('download_links');
+  const gammaBox = document.getElementById('gamma_box');
+  const gammaLink = document.getElementById('gamma_link');
+  const resultLog = document.getElementById('result_log');
+  const errorMessage = document.getElementById('error_message');
+  const errorLog = document.getElementById('error_log');
+
+  const downloadBtnStyles = [
+    'inline-flex items-center px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 text-sm font-medium border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors',
+    'inline-flex items-center px-4 py-2 rounded-xl bg-violet-500/20 text-violet-400 text-sm font-medium border border-violet-500/30 hover:bg-violet-500/30 transition-colors',
+    'inline-flex items-center px-4 py-2 rounded-xl bg-amber-500/20 text-amber-400 text-sm font-medium border border-amber-500/30 hover:bg-amber-500/30 transition-colors',
+    'inline-flex items-center px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 text-sm font-medium border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors',
+  ];
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const issueKeys = document.getElementById('issue_keys').value.trim();
+    const slackChannelId = document.getElementById('slack_channel_id').value.trim();
+    const generateCsv = document.getElementById('generate_csv').checked;
+    const generateSlides = document.getElementById('generate_slides').checked;
+    const publishToGamma = document.getElementById('publish_to_gamma').checked;
+
+    result.classList.remove('hidden');
+    resultSuccess.classList.add('hidden');
+    resultError.classList.add('hidden');
+    resultLoading.classList.remove('hidden');
+    submitBtn.disabled = true;
+    downloadLinks.innerHTML = '';
+    gammaBox.classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          issue_keys: issueKeys,
+          slack_channel_id: slackChannelId,
+          generate_csv: generateCsv,
+          generate_slides: generateSlides,
+          publish_to_gamma: publishToGamma
+        })
+      });
+      const data = await res.json();
+      resultLoading.classList.add('hidden');
+
+      if (data.success) {
+        const runId = data.run_id;
+        const files = data.files || [];
+        const names = { report: 'Report (MD)', csv: 'CSV', slides: 'Slides (MD)', gamma_outline: 'Gamma outline (MD)' };
+        files.forEach((f, i) => {
+          const a = document.createElement('a');
+          a.href = `/api/reports/${runId}/${f.path}`;
+          a.download = f.path;
+          a.className = downloadBtnStyles[i % downloadBtnStyles.length];
+          a.textContent = names[f.name] || f.path;
+          downloadLinks.appendChild(a);
+        });
+        if (data.gamma_url) {
+          gammaBox.classList.remove('hidden');
+          gammaLink.href = data.gamma_url;
+          gammaLink.textContent = data.gamma_url;
+        }
+        resultLog.textContent = data.log || '';
+        resultSuccess.classList.remove('hidden');
+      } else {
+        errorMessage.textContent = data.error || 'Generation failed.';
+        errorLog.textContent = data.log || '';
+        resultError.classList.remove('hidden');
+      }
+    } catch (err) {
+      resultLoading.classList.add('hidden');
+      errorMessage.textContent = err.message || 'Network or server error.';
+      errorLog.textContent = '';
+      resultError.classList.remove('hidden');
+    }
+    submitBtn.disabled = false;
+  });
+</script>
+{% endblock %}
