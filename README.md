@@ -37,6 +37,19 @@ Generate a **project-specific challenges report** for QA presentations by pullin
 
 4. Use `report.md` in your deck or convert to PDF/slides.
 
+### Web UI (Tailwind)
+
+Run the browser-based UI to generate reports and Gamma PPT from a form:
+
+```bash
+# With venv activated
+pip install -r requirements.txt   # includes Flask
+flask --app app run
+# Open http://127.0.0.1:5000
+```
+
+Or: `python app.py`. Enter JIRA issue keys (comma-separated), optionally enable **Generate slides** and **Publish to Gamma**, then click **Generate report**. Download links and the Gamma PPT URL appear when done.
+
 ## Data sources
 
 | Source | What it pulls | How |
