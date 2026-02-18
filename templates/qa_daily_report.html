@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+{% block title %}QA Daily Report{% endblock %}
+{% block content %}
+<div class="flex flex-1 gap-6 p-6 min-h-0">
+  <!-- Left: form -->
+  <div class="w-full max-w-xl shrink-0 overflow-auto">
+  <header class="mb-6">
+    <div class="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-medium px-3 py-1 mb-4 border border-cyan-500/20">
+      Daily Report → Slack
+    </div>
+    <h1 class="text-2xl font-bold text-white tracking-tight">QA Daily Report</h1>
+    <p class="mt-1 text-sm text-slate-400">Generate and post the QA daily report to Slack</p>
+  </header>
+
+  <div id="form_error_banner" class="hidden mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3" role="alert">
+    <svg class="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+    <div class="min-w-0 flex-1">
+      <p class="text-sm font-medium text-amber-200 mb-0.5">We couldn’t complete your request</p>
+      <p id="form_error_text" class="text-sm text-slate-300 leading-relaxed"></p>
+    </div>
+  </div>
+
+  <form id="daily_form" class="rounded-2xl border border-slate-700/80 bg-slate-900/80 shadow-xl shadow-slate-900/50 p-6 space-y-5 backdrop-blur">
+    <div>
+      <label for="issue_keys" class="block text-sm font-medium text-cyan-300 mb-1.5">Jira Id <span class="text-rose-400">*</span></label>
+      <input
+        type="text"
+        id="issue_keys"
+        name="issue_keys"
+        placeholder="e.g. CEPI-5344 or CEPI-5344, CEPI-5345"
+        required
+        class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
+      />
+      <p class="mt-1 text-xs text-slate-500">Required. Comma-separated for multiple issues.</p>
+    </div>
+
+    <div>
+      <div class="flex items-center gap-1.5 mb-1.5">
+        <label for="slack_channel_id" class="text-sm font-medium text-cyan-300">Slack Channel Id <span class="text-rose-400">*</span></label>
+        <span class="group/info relative inline-flex">
+          <svg class="w-4 h-4 text-slate-500 hover:text-cyan-400 cursor-help transition-colors" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+          </svg>
+          <span class="absolute left-0 top-full mt-1.5 hidden group-hover/info:block z-10 w-72 px-3 py-2 text-xs font-normal text-slate-200 bg-slate-800 border border-slate-600 rounded-lg shadow-lg whitespace-normal">
+            Required to read the last 1 day of conversation and create Challenges. Get the channel ID in Slack: right-click the channel → View channel details → copy the ID. Also used to post the report when posting to channel.
+          </span>
+        </span>
+      </div>
+      <input
+        type="text"
+        id="slack_channel_id"
+        name="slack_channel_id"
+        placeholder="e.g. C0AFTQD06MP1"
+        required
+        class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
+      />
+      <p class="mt-1 text-xs text-slate-500">Required to read the last 1 day of conversation and create Challenges. Also used to post the report when posting to channel.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-cyan-300 mb-1.5">Report Output</label>
+      <p class="text-xs text-slate-500 mb-1.5">QA Update, Jira Id and Jira Title are always included. Choose optional sections below.</p>
+      <div class="relative" id="report_output_multiselect_wrapper">
+        <button type="button" id="report_output_trigger" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-left text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors flex items-center justify-between gap-2">
+          <span id="report_output_trigger_text">No optional sections selected</span>
+          <svg class="w-4 h-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </button>
+        <input type="hidden" name="report_output_keys" id="report_output_keys" value="" />
+        <div id="report_output_dropdown" class="hidden absolute left-0 right-0 top-full mt-1 z-20 rounded-xl border border-slate-600 bg-slate-800 shadow-xl max-h-80 flex flex-col">
+          <div class="p-2 border-b border-slate-600 shrink-0">
+            <input type="text" id="report_output_search" placeholder="Search sections..." class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/60" />
+          </div>
+          <div class="p-2 border-b border-slate-600 shrink-0">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white">
+              <input type="checkbox" id="report_output_select_all" class="rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" />
+              <span id="report_output_select_all_label">Select all</span>
+            </label>
+          </div>
+          <div id="report_output_options" class="overflow-y-auto p-2 space-y-1 min-h-0">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="ready_for_qa_date" data-label="Ready For Qa Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Ready For Qa Date</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="qa_start_date" data-label="Qa Start Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Qa Start Date</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="one_round_of_testing_completion" data-label="One Round Of Testing Completion"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> One Round Of Testing Completion</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="total_bugs" data-label="Total Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Total Bugs</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_dev" data-label="Bugs With Dev"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With Dev</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_qa" data-label="Bugs With Qa"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With Qa</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="closed_bugs" data-label="Closed Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Closed Bugs</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="challenges" data-label="Challenges"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Challenges</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="environment_issue" data-label="Environment Issue"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Environment Issue</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="targetted_release_date" data-label="Targetted Release Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Targetted Release Date</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="uat_status" data-label="UAT Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> UAT Status</label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="preprod_status" data-label="Preprod Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Preprod Status</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-3 rounded-xl border border-slate-700/60 bg-slate-800/40 p-4">
+      <p class="text-sm font-medium text-amber-300">Output Options</p>
+      <label class="flex items-center gap-3 cursor-pointer group">
+        <input type="radio" name="output_option" value="channel" checked class="border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50 focus:ring-offset-slate-800" />
+        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Channel</span>
+      </label>
+      <label class="flex items-center gap-3 cursor-pointer group">
+        <input type="radio" name="output_option" value="review" class="border-slate-500 bg-slate-700 text-violet-400 focus:ring-violet-500/50 focus:ring-offset-slate-800" />
+        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Review</span>
+      </label>
+      <label class="flex items-center gap-3 cursor-pointer group">
+        <input type="radio" name="output_option" value="preview" class="border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-slate-800" />
+        <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Generate Report To Preview</span>
+      </label>
+    </div>
+
+    <div id="review_options" class="hidden space-y-3 rounded-xl border border-violet-500/30 bg-slate-800/40 p-4">
+      <p class="text-sm font-medium text-violet-300">Post Report To Review</p>
+      <div>
+        <div class="flex items-center gap-1.5 mb-1.5">
+          <label for="slack_user_id" class="text-sm font-medium text-cyan-300">Slack User Id <span class="text-rose-400">*</span></label>
+          <span class="group/userinfo relative inline-flex">
+            <svg class="w-4 h-4 text-slate-500 hover:text-violet-400 cursor-help transition-colors" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <span class="absolute left-0 top-full mt-1.5 hidden group-hover/userinfo:block z-10 w-72 px-3 py-2 text-xs font-normal text-slate-200 bg-slate-800 border border-slate-600 rounded-lg shadow-lg whitespace-normal">
+              Required to send the report as a direct message. To get a user ID in Slack: click the user's name → View profile → copy the user ID (shown at the bottom of the profile or in the profile URL, e.g. U01234ABCD).
+            </span>
+          </span>
+        </div>
+        <input
+          type="text"
+          id="slack_user_id"
+          name="slack_user_id"
+          placeholder="e.g. U01234ABCD"
+          class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60 focus:border-violet-500/50 transition-colors"
+        />
+        <p class="mt-1 text-xs text-slate-500">Required to send the report to review. Report will be sent as a direct message to this user.</p>
+      </div>
+    </div>
+
+    <div class="pt-4 border-t border-slate-700/80">
+      <button
+        type="submit"
+        id="submit_btn"
+        class="w-full px-5 py-3.5 rounded-xl font-semibold text-base bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:pointer-events-none transition-all shadow-lg shadow-cyan-500/20"
+      >
+        Generate QA Daily Report
+      </button>
+    </div>
+  </form>
+  </div>
+
+  <!-- Right: preview & logs side panel -->
+  <aside class="flex-1 min-w-0 flex flex-col border-l border-slate-700/80 pl-6">
+    <div class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Preview And Logs</div>
+    <div id="result_loading" class="hidden flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900/80 p-4 text-slate-300">
+      <svg class="animate-spin h-5 w-5 text-cyan-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span>Generating QA Daily Report…</span>
+    </div>
+    <div id="result_status" class="hidden mb-3"></div>
+    <div class="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden">
+      <div class="flex-1 min-h-0 flex flex-col rounded-xl border border-slate-700/80 bg-slate-900/60 overflow-hidden">
+        <div class="shrink-0 px-4 py-2 border-b border-slate-700/80 text-xs font-medium text-cyan-400/90">Preview</div>
+        <div class="flex-1 min-h-0 overflow-auto p-4">
+          <pre id="report_preview" class="text-sm text-slate-300 whitespace-pre-wrap font-mono">Preview and report will appear here after you generate.</pre>
+        </div>
+      </div>
+      <details class="group rounded-xl border border-slate-700/80 bg-slate-900/60 overflow-hidden max-h-[320px] flex flex-col min-h-0" id="logs_details">
+        <summary class="shrink-0 px-4 py-2 border-b border-slate-700/80 text-xs font-medium text-amber-400/90 cursor-pointer list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+          <span>Logs</span>
+          <svg class="w-4 h-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </summary>
+        <div class="flex-1 min-h-0 overflow-auto p-4 min-h-[120px]">
+          <pre id="result_log" class="text-xs text-slate-400 whitespace-pre-wrap font-mono">Log output will appear here.</pre>
+        </div>
+      </details>
+    </div>
+  </aside>
+</div>
+
+<script>
+  const form = document.getElementById('daily_form');
+  const submitBtn = document.getElementById('submit_btn');
+  const formErrorBanner = document.getElementById('form_error_banner');
+  const formErrorText = document.getElementById('form_error_text');
+  const resultLoading = document.getElementById('result_loading');
+  const resultStatus = document.getElementById('result_status');
+  const reportPreview = document.getElementById('report_preview');
+  const resultLog = document.getElementById('result_log');
+  const reviewOptions = document.getElementById('review_options');
+  const outputOptionInputs = document.querySelectorAll('input[name="output_option"]');
+
+  function friendlyError(msg) {
+    if (!msg || typeof msg !== 'string') return msg || 'Something went wrong. Please try again.';
+    const s = msg.trim();
+    if (s.indexOf('Slack Channel ID is incorrect or empty') !== -1) {
+      return 'Slack Channel ID is incorrect or empty. Please enter a valid channel ID (e.g. C0AFTQD06MP).';
+    }
+    if (s.indexOf('Slack Channel ID not found or incorrect') !== -1) {
+      return 'The Slack Channel ID could not be found or is incorrect.';
+    }
+    if (s.indexOf('JIRA ID not found or incorrect') !== -1) {
+      return 'One or more JIRA IDs could not be found or are incorrect. Please check the JIRA Id(s) and try again. The report was not posted.';
+    }
+    if (s.indexOf('Slack Channel ID is required') !== -1) {
+      return 'Slack Channel ID is required to read conversations and create Challenges. Please enter a valid channel ID.';
+    }
+    if (s.indexOf('Slack User ID is incorrect or empty') !== -1) {
+      return 'Slack User ID is incorrect or empty. Please enter a valid user ID (e.g. U01234ABCD).';
+    }
+    if (s.indexOf('Slack User ID not found or incorrect') !== -1) {
+      return 'The Slack User ID could not be found or is incorrect.';
+    }
+    if (s.indexOf('Please enter at least one JIRA Id') !== -1) return s;
+    if (s.indexOf('Slack User ID is required') !== -1) {
+      return 'Slack User ID is required to send the report to review. Please enter a valid user ID.';
+    }
+    if (s.indexOf('Please enter Slack User ID') !== -1) return s;
+    return s;
+  }
+
+  function showRightPanelLoading() {
+    formErrorBanner.classList.add('hidden');
+    resultLoading.classList.remove('hidden');
+    resultStatus.classList.add('hidden');
+  }
+  function showRightPanelSuccess(message) {
+    formErrorBanner.classList.add('hidden');
+    resultLoading.classList.add('hidden');
+    resultStatus.classList.remove('hidden');
+    resultStatus.className = 'mb-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-slate-900/80 px-4 py-2 text-emerald-400 text-sm';
+    resultStatus.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg><span>' + (message || 'Report generated.') + '</span>';
+  }
+  function showRightPanelError(msg) {
+    resultLoading.classList.add('hidden');
+    resultStatus.classList.add('hidden');
+    formErrorText.textContent = friendlyError(msg);
+    formErrorBanner.classList.remove('hidden');
+    formErrorBanner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const slackUserIdInput = document.getElementById('slack_user_id');
+  outputOptionInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      const isReview = document.querySelector('input[name="output_option"]:checked')?.value === 'review';
+      reviewOptions.classList.toggle('hidden', !isReview);
+      slackUserIdInput.required = isReview;
+    });
+  });
+  if (document.querySelector('input[name="output_option"]:checked')?.value === 'review') {
+    slackUserIdInput.required = true;
+  }
+
+  (function reportOutputMultiselect() {
+    var trigger = document.getElementById('report_output_trigger');
+    var triggerText = document.getElementById('report_output_trigger_text');
+    var dropdown = document.getElementById('report_output_dropdown');
+    var searchInput = document.getElementById('report_output_search');
+    var selectAllCb = document.getElementById('report_output_select_all');
+    var hiddenInput = document.getElementById('report_output_keys');
+    var options = document.querySelectorAll('.report-output-option');
+    var totalCount = options.length;
+
+    function getSelectedValues() {
+      var arr = [];
+      options.forEach(function (label) {
+        if (label.querySelector('.report-output-cb').checked) arr.push(label.getAttribute('data-value'));
+      });
+      return arr;
+    }
+    function updateHiddenInput() {
+      hiddenInput.value = getSelectedValues().join(',');
+    }
+    var selectAllLabel = document.getElementById('report_output_select_all_label');
+    function updateTriggerText() {
+      var n = getSelectedValues().length;
+      if (n === 0) triggerText.textContent = 'No optional sections selected';
+      else if (n === totalCount) triggerText.textContent = 'All optional sections selected';
+      else triggerText.textContent = n + ' section' + (n === 1 ? '' : 's') + ' selected';
+    }
+    function updateSelectAllState() {
+      var visible = document.querySelectorAll('.report-output-option:not([style*="display: none"])');
+      var checked = document.querySelectorAll('.report-output-option:not([style*="display: none"]) .report-output-cb:checked');
+      var allChecked = visible.length > 0 && checked.length === visible.length;
+      selectAllCb.checked = allChecked;
+      selectAllCb.indeterminate = checked.length > 0 && checked.length < visible.length;
+      selectAllLabel.textContent = allChecked ? 'Unselect all' : 'Select all';
+    }
+    function syncFromCheckboxes() {
+      updateHiddenInput();
+      updateTriggerText();
+      updateSelectAllState();
+    }
+
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('hidden');
+      if (!dropdown.classList.contains('hidden')) searchInput.focus();
+    });
+    document.addEventListener('click', function () {
+      dropdown.classList.add('hidden');
+    });
+    dropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    searchInput.addEventListener('input', function () {
+      var q = (this.value || '').trim().toLowerCase();
+      options.forEach(function (label) {
+        var labelText = (label.getAttribute('data-label') || '').toLowerCase();
+        label.style.display = !q || labelText.indexOf(q) !== -1 ? '' : 'none';
+      });
+      updateSelectAllState();
+    });
+
+    selectAllCb.addEventListener('change', function () {
+      document.querySelectorAll('.report-output-option:not([style*="display: none"]) .report-output-cb').forEach(function (cb) {
+        cb.checked = selectAllCb.checked;
+      });
+      syncFromCheckboxes();
+    });
+
+    options.forEach(function (label) {
+      label.querySelector('.report-output-cb').addEventListener('change', syncFromCheckboxes);
+    });
+  })();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const issueKeys = document.getElementById('issue_keys').value.trim();
+    const slackChannelId = document.getElementById('slack_channel_id').value.trim();
+    const outputOption = document.querySelector('input[name="output_option"]:checked')?.value || 'preview';
+    const slackUserId = document.getElementById('slack_user_id').value.trim();
+    const reportOutputKeys = (document.getElementById('report_output_keys').value || '').trim();
+
+    if (!issueKeys) {
+      showRightPanelError('Please enter at least one JIRA Id.');
+      resultLog.textContent = '';
+      return;
+    }
+    const slackChannelIdVal = document.getElementById('slack_channel_id').value.trim();
+    if (!slackChannelIdVal) {
+      showRightPanelError('Slack Channel ID is required to read conversations and create Challenges.');
+      resultLog.textContent = '';
+      return;
+    }
+    showRightPanelLoading();
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/qa-daily-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          issue_keys: issueKeys,
+          slack_channel_id: slackChannelId,
+          output_option: outputOption,
+          slack_user_id: outputOption === 'review' ? slackUserId : '',
+          report_output_keys: reportOutputKeys ? reportOutputKeys.split(',') : []
+        })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        var msg = 'Report generated (preview).';
+        if (data.posted_channel) msg = 'Report generated and posted to channel.';
+        else if (data.posted_review) msg = 'Report generated and posted to review.';
+        showRightPanelSuccess(msg);
+        reportPreview.textContent = data.report || '';
+        resultLog.textContent = data.log || '';
+      } else {
+        showRightPanelError(data.error || 'Generation failed.');
+        resultLog.textContent = data.log || '';
+      }
+    } catch (err) {
+      showRightPanelError(err.message || 'Network or server error.');
+      resultLog.textContent = '';
+    }
+    submitBtn.disabled = false;
+  });
+</script>
+{% endblock %}
