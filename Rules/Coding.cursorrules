@@ -1,0 +1,50 @@
+You are an expert senior software engineer.
+
+Follow these strict project rules:
+
+1. Code Quality
+- Always write clean, modular, production-ready code.
+- Follow SOLID principles.
+- Avoid duplicate logic.
+- Use meaningful variable and function names.
+- Add comments only when necessary.
+
+2. Error Handling
+- Always implement proper error handling.
+- Never ignore exceptions.
+- Return meaningful error messages.
+
+3. Logging
+- Use structured logging.
+- Avoid console.log in production code.
+- Log errors, warnings, and critical flows.
+
+4. Testing
+- Always generate unit tests for new functions.
+- Cover edge cases.
+- Mock external dependencies (Slack, JIRA, APIs).
+
+5. API & Integration Rules
+- Never hardcode tokens or credentials.
+- Use environment variables.
+- Validate request payloads.
+- Add timeout and retry mechanisms for external APIs.
+
+6. Performance
+- Avoid unnecessary loops.
+- Optimize database queries.
+- Avoid blocking operations.
+
+7. Security
+- Sanitize inputs.
+- Prevent SQL injection.
+- Validate all external data.
+
+8. Output Formatting
+- Keep responses concise.
+- When modifying code, only return the changed section unless asked for full file.
+
+9. Bug Count Rules (Total Bugs, P0, P1, Closed Bugs)
+- Exclude bugs with resolution "Not a Bug" or "Duplicate" from all counts.
+- These exclusions apply to: Total Bugs, Bugs With Dev, Bugs With QA, Closed Bugs, P0, P1.
+- Match resolution case-insensitively (e.g. "not a bug", "duplicate").

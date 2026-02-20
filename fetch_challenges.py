@@ -289,7 +289,7 @@ Key dates: Ready for QA {ready_qa}; Deployment completed {deployment_done}; QA I
 Linked issues: {len(linked)} total; Bugs: {total_bugs} (P0: {p0}, P1: {p1}); Internal PEDS: {internal_peds}
 Recent comments:
 """ + "\n".join(f"- {t}" for t in comment_texts if t)
-    prompt = """You are a QA manager. Based on the following JIRA issue context, write a brief QA challenges summary (2-4 sentences). Focus on: main QA challenges, impact of bug volume/priority, and timeline from QA to deployment. Be concise and professional. Output only the summary, no preamble."""
+    prompt = """You are a QA manager. Based on the following JIRA issue context, write a brief QA challenges summary (2-4 sentences). Focus on: main QA challenges, impact of bug volume/priority, and timeline from QA to deployment. Be concise and professional. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. Focus on concrete challenges from the data only. Output only the summary, no preamble."""
     try:
         from openai import OpenAI
         import httpx
@@ -303,7 +303,7 @@ Recent comments:
         r = client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             messages=[
-                {"role": "system", "content": "You write concise QA challenge summaries for project reports."},
+                {"role": "system", "content": "You write concise QA challenge summaries for project reports. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. Focus on concrete challenges from the data only."},
                 {"role": "user", "content": prompt + "\n\n" + context},
             ],
             max_tokens=300,
@@ -337,7 +337,7 @@ def _get_ai_slack_channel_summary(slack_messages: list[dict], max_messages: int 
 - Time or duration mentioned to fix bugs / resolve issues
 - Dev-ops and environment-related challenges (e.g. deployment, config, env/LEDs issues)
 
-If the messages do not mention a topic, omit it. Be factual. Use one or two paragraphs or 4–8 bullets so the total length is at least 100 words. Output only the summary, no preamble or headings."""
+If the messages do not mention a topic, omit it. Be factual. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. Focus on concrete challenges from the messages only. Use one or two paragraphs or 4–8 bullets so the total length is at least 100 words. Output only the summary, no preamble or headings."""
 
     try:
         from openai import OpenAI
@@ -352,7 +352,7 @@ If the messages do not mention a topic, omit it. Be factual. Use one or two para
         r = client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             messages=[
-                {"role": "system", "content": "You write concise QA and Slack channel summaries for project reports."},
+                {"role": "system", "content": "You write concise QA and Slack channel summaries for project reports. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. Focus on concrete challenges from the data only."},
                 {"role": "user", "content": prompt + "\n\n---\n\n" + context},
             ],
             max_tokens=600,
@@ -439,15 +439,15 @@ Output format (use this exactly):
 - Bullet 1
 - Bullet 2
 - Bullet 3
-(3-5 bullets: summarize QA challenges due to developers, dev-ops, environment/LEDs, and resource issues if any)
+(3-5 bullets: summarize QA challenges due to developers, dev-ops, environment/LEDs, and resource issues if any. If LEDs count is 0, do not mention environment or LED-related issues.)
 
 ## Slide 2: QA Challenges – Details (Developer, Dev-ops, Environment, Resource)
 - Bullet 1
 - Bullet 2
 - Bullet 3
-(3-5 bullets: call out specific challenges from the data – e.g. developer: bug volume/code quality; dev-ops: deployment/config; environment: LEDs, flakiness; resource: capacity/tools. Use "None" or "N/A" if no data for a category.)
+(3-5 bullets: call out specific challenges from the data – e.g. developer: bug volume/code quality; dev-ops: deployment/config; environment: LEDs, flakiness; resource: capacity/tools. If LEDs count is 0, do not mention environment or LED-related issues. Use "None" or "N/A" if no data for a category.)
 
-Use: JIRA issue summary, Total Bug count, P0/P1 count, LEDs, Internal PEDS, Challenges text, and AI summary. Be concise; each bullet one line. No preamble."""
+Use: JIRA issue summary, Total Bug count, P0/P1 count, LEDs, Internal PEDS, Challenges text, and AI summary. Be concise; each bullet one line. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. Focus on concrete challenges from the data only. No preamble."""
 
     try:
         from openai import OpenAI
@@ -462,7 +462,7 @@ Use: JIRA issue summary, Total Bug count, P0/P1 count, LEDs, Internal PEDS, Chal
         r = client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             messages=[
-                {"role": "system", "content": "You generate concise QA presentation slides in markdown."},
+                {"role": "system", "content": "You generate concise QA presentation slides in markdown. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. If LEDs count is 0, do not mention environment or LED-related issues. Focus on concrete challenges from the data only."},
                 {"role": "user", "content": prompt + "\n\n---\n\nData:\n" + context},
             ],
             max_tokens=600,
@@ -482,16 +482,16 @@ Output format: each slide is a section. Separate each slide with a line containi
 Slide 1: Title slide – QA Project Challenges Presentation
 Slide 2: Executive summary & key metrics – Scope (issues covered), Total Bug count, P0/P1, LEDs, Internal PEDS. 3-5 bullets.
 Slide 3: QA challenges – Developer & Dev-ops – Bug volume/code quality, deployment pipeline, config, release timing. Use data. 3-6 bullets.
-Slide 4: QA challenges – Environment (LEDs) & Resource – Environment flakiness, LEDs, test env; capacity/tooling if any. 3-6 bullets.
+Slide 4: QA challenges – Environment (LEDs) & Resource – Environment flakiness, LEDs, test env; capacity/tooling if any. If LEDs count is 0, do not mention environment or LED-related issues. 3-6 bullets.
 Slide 5: Timeline, risks & next steps – Ready for QA, Deployment completed, QA IP to Ready for deployment; risks/recommendations; conclusion. 3-6 bullets.
 
-Use the provided data. Each slide: title line then 3-6 bullet points. Call out Developer, Dev-ops, Environment (LEDs), Resource where relevant. No preamble. Start with Slide 1."""
+Use the provided data. Each slide: title line then 3-6 bullet points. Call out Developer, Dev-ops, Environment (LEDs), Resource where relevant. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. Focus on concrete challenges from the data only. No preamble. Start with Slide 1."""
 
         try:
             r2 = client.chat.completions.create(
                 model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
                 messages=[
-                    {"role": "system", "content": "You generate QA presentation outlines focused on challenges due to Developer, Dev-ops, Environment (LEDs), and Resource. Use --- on its own line between slides."},
+                    {"role": "system", "content": "You generate QA presentation outlines focused on challenges due to Developer, Dev-ops, Environment (LEDs), and Resource. Do not use meta-commentary about communication gaps, lack of updates, or lack of discussions. Do not use lack of communication, miscommunication, no communication in group regarding any JIRA ticket, or similar phrases. If LEDs count is 0, do not mention environment or LED-related issues. Focus on concrete challenges from the data only. Use --- on its own line between slides."},
                     {"role": "user", "content": gamma_prompt + "\n\n---\n\nData:\n" + context},
                 ],
                 max_tokens=1200,

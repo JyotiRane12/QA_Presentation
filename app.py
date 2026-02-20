@@ -7,9 +7,10 @@ import os
 import re
 import subprocess
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
@@ -38,9 +39,11 @@ REPORT_OUTPUT_LABELS = {
     "total_bugs": "Total Bugs",
     "bugs_with_dev": "Bugs With Dev",
     "bugs_with_qa": "Bugs With QA",
+    "bugs_with_product": "Bugs With Product (Approval/Discussion)",
     "closed_bugs": "Closed Bugs",
     "challenges": "Challenges",
     "environment_issue": "Environment Issue",
+    "internal_peds": "Internal PEDS",
     "targetted_release_date": "Targetted Release Date",
     "uat_status": "UAT Status",
     "preprod_status": "Preprod Status",
@@ -64,6 +67,54 @@ def _save_scheduler_jobs(jobs: list[dict]) -> None:
     SCHEDULER_JOBS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(SCHEDULER_JOBS_FILE, "w", encoding="utf-8") as f:
         json.dump(jobs, f, indent=2)
+
+
+def _validate_schedule_dates(
+    schedule_start: str | None,
+    schedule_end: str | None,
+    frequency: str,
+    max_window_days: int = 180,
+    for_edit: bool = False,
+) -> tuple[datetime | None, datetime | None, str | None]:
+    """
+    Validate schedule start/end. Returns (start_dt, end_dt, error_msg).
+    error_msg is None on success.
+    for_edit=True skips "Start Date cannot be earlier than today" (editing existing tasks).
+    """
+    today = datetime.now().date()
+    max_end_date = today + timedelta(days=max_window_days)
+
+    if schedule_end and not schedule_start:
+        return None, None, "Start Date is required when End Date is selected"
+
+    if schedule_start and not schedule_end:
+        return None, None, "End Date is required when Start Date is selected"
+
+    if schedule_start:
+        try:
+            start_dt = datetime.fromisoformat(schedule_start.replace("Z", "+00:00"))
+        except ValueError:
+            return None, None, "Please enter a valid Start Date (dd/mm/yyyy)"
+        if not for_edit and start_dt.date() < today:
+            return None, None, "Start Date cannot be earlier than today"
+    else:
+        start_dt = None
+
+    end_dt = None
+    if schedule_end:
+        try:
+            end_dt = datetime.fromisoformat(schedule_end.replace("Z", "+00:00"))
+        except ValueError:
+            return None, None, "Please enter a valid End Date (dd/mm/yyyy)"
+        if start_dt and end_dt.date() <= start_dt.date():
+            return None, None, "End Date must be after Start Date"
+        if end_dt.date() > max_end_date:
+            return None, None, "End Date cannot exceed the maximum scheduling window"
+
+    if frequency == "3min" and schedule_start and not schedule_end:
+        return None, None, "End date is required for 3 min frequency."
+
+    return start_dt, end_dt, None
 
 
 def _job_kwargs_for_entry(entry: dict) -> dict:
@@ -100,18 +151,25 @@ def _add_job_for_entry(entry: dict) -> bool:
         if now >= first_run_dt:
             return False
     job_kwargs = _job_kwargs_for_entry(entry)
+    frequency = (entry.get("frequency") or "daily").strip().lower()
     if end_date:
         end_d = date.fromisoformat(end_date)
         end_dt = datetime(end_d.year, end_d.month, end_d.day, 23, 59, 59)
-        _qa_scheduler.add_job(
-            _run_scheduled_qa_daily_report,
-            trigger=CronTrigger(
+        if frequency == "3min":
+            trigger = CronTrigger(minute="*/3", start_date=first_run_dt, end_date=end_dt)
+        elif frequency == "15min":
+            trigger = CronTrigger(minute="*/15", start_date=first_run_dt, end_date=end_dt)
+        else:
+            trigger = CronTrigger(
                 hour=first_run_dt.hour,
                 minute=first_run_dt.minute,
                 second=first_run_dt.second,
                 start_date=first_run_dt,
                 end_date=end_dt,
-            ),
+            )
+        _qa_scheduler.add_job(
+            _run_scheduled_qa_daily_report,
+            trigger=trigger,
             kwargs=job_kwargs,
             id=f"qa_daily_{first_run_dt.isoformat()}_{uuid.uuid4().hex[:8]}",
             replace_existing=False,
@@ -178,18 +236,25 @@ def _register_scheduler_jobs() -> None:
             if now >= first_run_dt:
                 continue
         job_kwargs = _job_kwargs_for_entry(entry)
+        frequency = (entry.get("frequency") or "daily").strip().lower()
         if end_date:
             end_d = date.fromisoformat(end_date)
             end_dt = datetime(end_d.year, end_d.month, end_d.day, 23, 59, 59)
-            _qa_scheduler.add_job(
-                _run_scheduled_qa_daily_report,
-                trigger=CronTrigger(
+            if frequency == "3min":
+                trigger = CronTrigger(minute="*/3", start_date=first_run_dt, end_date=end_dt)
+            elif frequency == "15min":
+                trigger = CronTrigger(minute="*/15", start_date=first_run_dt, end_date=end_dt)
+            else:
+                trigger = CronTrigger(
                     hour=first_run_dt.hour,
                     minute=first_run_dt.minute,
                     second=first_run_dt.second,
                     start_date=first_run_dt,
                     end_date=end_dt,
-                ),
+                )
+            _qa_scheduler.add_job(
+                _run_scheduled_qa_daily_report,
+                trigger=trigger,
                 kwargs=job_kwargs,
                 id=f"qa_daily_{first_run_dt.isoformat()}_{uuid.uuid4().hex[:8]}",
                 replace_existing=False,
@@ -251,6 +316,119 @@ def run_report(
     return proc.returncode, out, gamma_url
 
 
+PENDING_REPORTS_DIR = PROJECT_ROOT / "data" / "pending_reports"
+
+
+def _post_report_to_channel(channel_id: str, report_text: str) -> None:
+    """Post report text to Slack channel. Uses core slack client with 3 retries."""
+    from core.slack_client import post_message
+    post_message(channel_id, report_text)
+
+
+@app.route("/api/slack-interaction", methods=["POST"])
+def api_slack_interaction():
+    """Handle Slack button clicks and modal submissions."""
+    payload_str = request.form.get("payload")
+    if not payload_str:
+        return "", 200
+    try:
+        payload = json.loads(payload_str)
+    except json.JSONDecodeError:
+        return "", 200
+    if payload.get("type") == "url_verification":
+        return jsonify({"challenge": payload.get("challenge", "")}), 200
+
+    # Modal submission (Edit & Post -> user edited and submitted)
+    if payload.get("type") == "view_submission":
+        view = payload.get("view") or {}
+        if view.get("callback_id") == "review_report_modal":
+            try:
+                meta = json.loads((view.get("private_metadata") or "{}"))
+                channel_id = (meta.get("channel_id") or "").strip() or os.environ.get("SLACK_CHANNEL_ID", "").strip()
+                report_id = (meta.get("report_id") or "").strip()
+            except json.JSONDecodeError:
+                return "", 200
+            values = (view.get("state") or {}).get("values") or {}
+            report_block = values.get("report_block") or {}
+            report_input = report_block.get("report_text") or {}
+            report_text = (report_input.get("value") or "").strip()
+            if channel_id and report_text:
+                _post_report_to_channel(channel_id, report_text)
+            if report_id:
+                (PENDING_REPORTS_DIR / f"{report_id}.json").unlink(missing_ok=True)
+            return "", 200
+
+    # Button clicks (block_actions)
+    actions = (payload.get("actions") or [])
+    if not actions:
+        return "", 200
+    action = actions[0]
+    action_id = action.get("action_id") or ""
+    report_id = (action.get("value") or "").strip()
+    if not report_id:
+        return "", 200
+
+    pending_file = PENDING_REPORTS_DIR / f"{report_id}.json"
+    if not pending_file.exists():
+        return "", 200
+    try:
+        data = json.loads(pending_file.read_text(encoding="utf-8"))
+        report_text = data.get("report") or ""
+        channel_id = (data.get("channel_id") or "").strip() or os.environ.get("SLACK_CHANNEL_ID", "").strip()
+    except (json.JSONDecodeError, OSError):
+        pending_file.unlink(missing_ok=True)
+        return "", 200
+
+    if action_id == "post_report_to_channel":
+        pending_file.unlink(missing_ok=True)
+        if channel_id and report_text:
+            _post_report_to_channel(channel_id, report_text)
+        return "", 200
+
+    if action_id == "review_and_post_report":
+        trigger_id = (payload.get("trigger_id") or "").strip()
+        if not trigger_id:
+            return "", 200
+        token = os.environ.get("SLACK_BOT_TOKEN", "").strip()
+        if not token:
+            return "", 200
+        editable = report_text[:3000] + ("\n\n...(truncated)" if len(report_text) > 3000 else "")
+        modal_view = {
+            "type": "modal",
+            "callback_id": "review_report_modal",
+            "title": {"type": "plain_text", "text": "Edit & Post Report"},
+            "submit": {"type": "plain_text", "text": "Post"},
+            "close": {"type": "plain_text", "text": "Cancel"},
+            "private_metadata": json.dumps({"report_id": report_id, "channel_id": channel_id}),
+            "blocks": [
+                {
+                    "type": "input",
+                    "block_id": "report_block",
+                    "label": {"type": "plain_text", "text": "Edit report before posting"},
+                    "element": {
+                        "type": "plain_text_input",
+                        "action_id": "report_text",
+                        "multiline": True,
+                        "max_length": 3000,
+                        "initial_value": editable,
+                    },
+                },
+            ],
+        }
+        try:
+            requests.post(
+                "https://slack.com/api/views.open",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"trigger_id": trigger_id, "view": modal_view},
+                timeout=10,
+            )
+        except requests.RequestException:
+            pass
+        return "", 200
+
+    return "", 200
+
+
 @app.route("/")
 def index():
     return redirect(url_for("qa_project_challenges"))
@@ -258,7 +436,14 @@ def index():
 
 @app.route("/qa-daily-report")
 def qa_daily_report():
-    return render_template("qa_daily_report.html", active_page="qa_daily_report")
+    today = datetime.now().date().isoformat()
+    max_end = (datetime.now().date() + timedelta(days=180)).isoformat()
+    return render_template(
+        "qa_daily_report.html",
+        active_page="qa_daily_report",
+        schedule_min_date=today,
+        schedule_max_end_date=max_end,
+    )
 
 
 def _time_24_to_12(time_24: str) -> str:
@@ -316,13 +501,24 @@ def scheduler_logs():
         log_copy["report_output_labels"] = ", ".join(
             REPORT_OUTPUT_LABELS.get(k, k) for k in keys if k
         ) or "None"
-        log_copy["scheduler_time_12hr"] = _time_24_to_12(log_copy.get("scheduler_time") or "")
+        freq = (log_copy.get("frequency") or "").strip().lower()
+        time_12hr = _time_24_to_12(log_copy.get("scheduler_time") or "")
+        if freq == "3min":
+            log_copy["scheduler_time_12hr"] = f"{time_12hr} (Every 3 min)" if time_12hr else "Every 3 min"
+        elif freq == "15min":
+            log_copy["scheduler_time_12hr"] = f"{time_12hr} (Every 15 min)" if time_12hr else "Every 15 min"
+        else:
+            log_copy["scheduler_time_12hr"] = time_12hr
         logs_with_status.append(log_copy)
+    today = datetime.now().date().isoformat()
+    max_end = (datetime.now().date() + timedelta(days=180)).isoformat()
     return render_template(
         "scheduler_logs.html",
         active_page="scheduler_logs",
         logs=logs_with_status,
         report_output_options=list(REPORT_OUTPUT_LABELS.items()),
+        schedule_min_date=today,
+        schedule_max_end_date=max_end,
     )
 
 
@@ -400,21 +596,22 @@ def api_scheduler_logs_update():
     if isinstance(report_output_keys, list):
         entry["report_output_keys"] = [k for k in report_output_keys if k]
 
+    frequency = (data.get("frequency") or "daily").strip().lower()
+    entry["frequency"] = frequency if frequency in ("daily", "3min") else "daily"
+
     schedule_start = (data.get("schedule_start") or "").strip() or None
     schedule_end = (data.get("schedule_end") or "").strip() or None
-    if schedule_start:
-        try:
-            start_dt = datetime.fromisoformat(schedule_start.replace("Z", "+00:00"))
+    if schedule_start or schedule_end:
+        start_dt, end_dt, err = _validate_schedule_dates(
+            schedule_start, schedule_end, entry.get("frequency", "daily"), for_edit=True
+        )
+        if err:
+            return jsonify({"success": False, "error": err}), 400
+        if start_dt:
             entry["scheduler_start_date"] = start_dt.date().isoformat()
             entry["scheduler_time"] = start_dt.strftime("%H:%M")
-        except ValueError:
-            return jsonify({"success": False, "error": "Invalid schedule start date/time."}), 400
-    if schedule_end:
-        try:
-            end_dt = datetime.fromisoformat(schedule_end.replace("Z", "+00:00"))
+        if end_dt:
             entry["scheduler_end_date"] = end_dt.date().isoformat()
-        except ValueError:
-            return jsonify({"success": False, "error": "Invalid schedule end date/time."}), 400
 
     action_state = entry.get("action_state", "active")
     if action_state == "active":
@@ -545,9 +742,10 @@ def run_qa_daily_report(
         env.pop("SLACK_REVIEW_CHANNEL_ID", None)
         env.pop("SLACK_REVIEW_USER_ID", None)
     elif output_option == "review":
+        if slack_channel_id and slack_channel_id.strip():
+            env["SLACK_CHANNEL_ID"] = slack_channel_id.strip()
         if slack_user_id and slack_user_id.strip():
             env["SLACK_REVIEW_USER_ID"] = slack_user_id.strip()
-        env.pop("SLACK_CHANNEL_ID", None)
         env.pop("SLACK_REVIEW_CHANNEL_ID", None)
     proc = subprocess.run(
         cmd,
@@ -586,7 +784,7 @@ def api_qa_daily_report():
     if output_option == "review" and not slack_user_id:
         return jsonify({
             "success": False,
-            "error": "Slack User ID is required to send the report to review.",
+            "error": "Slack User ID is required for Review Report and Post to Channel.",
         }), 400
 
     report_output_keys = data.get("report_output_keys")
@@ -596,23 +794,16 @@ def api_qa_daily_report():
     schedule_start = (data.get("schedule_start") or "").strip() or None
     schedule_end = (data.get("schedule_end") or "").strip() or None
     frequency = (data.get("frequency") or "daily").strip().lower() or "daily"
+    if frequency not in ("daily", "3min"):
+        frequency = "daily"
 
     # If a schedule is set, run only at that date/time (or daily until end); do not run now.
-    if schedule_start:
-        try:
-            start_dt = datetime.fromisoformat(schedule_start.replace("Z", "+00:00"))
-        except ValueError:
-            return jsonify({"success": False, "error": "Invalid schedule start date/time."}), 400
-        end_dt = None
-        if schedule_end:
-            try:
-                end_dt = datetime.fromisoformat(schedule_end.replace("Z", "+00:00"))
-            except ValueError:
-                return jsonify({"success": False, "error": "Invalid schedule end date/time."}), 400
-            if end_dt < start_dt:
-                return jsonify({"success": False, "error": "Schedule end must be after start."}), 400
+    if schedule_start or schedule_end:
+        start_dt, end_dt, err = _validate_schedule_dates(schedule_start, schedule_end, frequency)
+        if err:
+            return jsonify({"success": False, "error": err}), 400
 
-        if frequency == "daily" and end_dt:
+        if (frequency == "daily" or frequency == "3min") and end_dt:
             entry = {
                 "id": str(uuid.uuid4()),
                 "action_state": "active",
@@ -621,29 +812,35 @@ def api_qa_daily_report():
                 "scheduler_start_date": start_dt.date().isoformat(),
                 "scheduler_end_date": end_dt.date().isoformat(),
                 "scheduler_time": start_dt.strftime("%H:%M"),
+                "frequency": frequency,
                 "issue_keys": issue_keys,
                 "output_option": output_option,
                 "slack_channel_id": slack_channel_id,
-                "slack_user_id": slack_user_id,
+                "slack_user_id": slack_user_id if output_option == "review" else None,
                 "report_output_keys": report_output_keys,
             }
             job_kwargs = _job_kwargs_for_entry(entry)
-            _qa_scheduler.add_job(
-                _run_scheduled_qa_daily_report,
-                trigger=CronTrigger(
+            if frequency == "3min":
+                trigger = CronTrigger(minute="*/3", start_date=start_dt, end_date=end_dt)
+                msg = f"Report scheduled every 3 min from {start_dt.strftime('%Y-%m-%d %H:%M')} to {end_dt.strftime('%Y-%m-%d %H:%M')}."
+            else:
+                trigger = CronTrigger(
                     hour=start_dt.hour,
                     minute=start_dt.minute,
                     second=start_dt.second,
                     start_date=start_dt,
                     end_date=end_dt,
-                ),
+                )
+                msg = f"Report scheduled daily at {start_dt.strftime('%H:%M')} from {start_dt.date()} to {end_dt.date()}."
+            _qa_scheduler.add_job(
+                _run_scheduled_qa_daily_report,
+                trigger=trigger,
                 kwargs=job_kwargs,
                 id=f"qa_daily_{start_dt.isoformat()}_{uuid.uuid4().hex[:8]}",
                 replace_existing=False,
             )
             _scheduler_logs.append(entry)
             _save_scheduler_jobs(_scheduler_logs)
-            msg = f"Report scheduled daily at {start_dt.strftime('%H:%M')} from {start_dt.date()} to {end_dt.date()}."
         else:
             entry = {
                 "id": str(uuid.uuid4()),
@@ -656,7 +853,7 @@ def api_qa_daily_report():
                 "issue_keys": issue_keys,
                 "output_option": output_option,
                 "slack_channel_id": slack_channel_id,
-                "slack_user_id": slack_user_id,
+                "slack_user_id": slack_user_id if output_option == "review" else None,
                 "report_output_keys": report_output_keys,
             }
             job_kwargs = _job_kwargs_for_entry(entry)
@@ -683,7 +880,7 @@ def api_qa_daily_report():
             issue_keys=issue_keys,
             output_option=output_option,
             slack_channel_id=slack_channel_id,
-            slack_user_id=slack_user_id,
+            slack_user_id=slack_user_id if output_option == "review" else None,
             report_output_keys=report_output_keys,
         )
     except subprocess.TimeoutExpired:
@@ -705,12 +902,6 @@ def api_qa_daily_report():
             if "Slack Channel ID not found or incorrect" in line:
                 error_msg = "Slack Channel ID not found or incorrect. Report was not posted."
                 break
-            if "Slack User ID is incorrect or empty" in line:
-                error_msg = "Slack User ID is incorrect or empty. Report was not sent."
-                break
-            if "Slack User ID not found or incorrect" in line:
-                error_msg = "Slack User ID not found or incorrect. Report was not sent."
-                break
             if "SystemExit:" in line or "Error:" in line:
                 # Fallback: use first substantive error-like line
                 clean = line.replace("SystemExit:", "").strip()
@@ -725,7 +916,7 @@ def api_qa_daily_report():
         }), 422
 
     posted_channel = output_option == "channel" and "Report posted to Slack" in log
-    posted_review = output_option == "review" and ("Report sent to user" in log or "Report posted to Slack" in log or "Report posted to channel" in log)
+    posted_review = output_option == "review" and ("Report sent to user" in log or "Report sent as ephemeral" in log or "Report posted to Slack" in log)
     return jsonify({
         "success": True,
         "posted_channel": posted_channel,

@@ -1,0 +1,235 @@
+==================================================
+DAILY QA REPORT - BUG COUNT RULE CONFIGURATION
+==================================================
+Source of truth for: Total Bugs, P0, P1, Bugs With Dev, Bugs With QA, Bugs With Product (Approval/Discussion), Closed Bugs.
+Referenced by: core/report_formatter.py
+==================================================
+
+GLOBAL FILTER CONDITIONS (APPLIES TO ALL COUNTS)
+--------------------------------------------------
+• Only include Issue Type = "Bug"
+• Bug must be linked to a Main JIRA ID (parent story / task)
+• Resolution must NOT be:
+    - "Not a Bug"
+    - "Duplicate"
+• Exclude standalone/unlinked bugs
+• Exclude cancelled or rejected tickets
+• Always calculate dynamically from filtered JIRA data
+• If no valid bugs exist, show count as 0
+
+
+==================================================
+SECTION 1: TOTAL BUG COUNT RULES
+==================================================
+
+"Total Bugs" must include:
+• All valid bugs matching Global Filter Conditions
+• Regardless of status (Dev / QA / Released)
+
+Output format:
+Total Bugs: <count>
+
+
+==================================================
+SECTION 2: P0 BUG COUNT RULES
+==================================================
+
+"P0" must include:
+• All valid bugs matching Global Filter Conditions
+• Issue Type / Priority = "P0"
+
+Output format:
+P0: <count>
+
+
+==================================================
+SECTION 3: P1 BUG COUNT RULES
+==================================================
+
+"P1" must include:
+• All valid bugs matching Global Filter Conditions
+• Issue Type / Priority = "P1"
+
+Output format:
+P1: <count>
+
+
+==================================================
+SECTION 4: BUGS WITH DEV COUNT RULES
+==================================================
+
+"Bugs With Dev" must include valid bugs where
+Status is one of:
+
+• "Open"
+• "Tech Feasibility"
+• "Ready For Development"
+• "Development IP"
+• "Development Review"
+• "Bug Fixing IP"
+
+Include reopened bugs if current status matches above.
+
+Exclude:
+• QA statuses
+• Released status
+
+Output format:
+Bugs With Dev: <count>
+
+
+==================================================
+SECTION 5: BUGS WITH QA COUNT RULES
+==================================================
+
+"Bugs With QA" must include valid bugs where
+Status is one of:
+
+• "Ready for QA"
+• "QA In Progress"
+• "QA Review"
+• "Ready For SIT"
+• "SIT In Progress"
+• "Ready To Release"
+
+Include reopened bugs if current status matches above.
+
+Exclude:
+• Dev statuses
+• Released status
+
+Output format:
+Bugs With QA: <count>
+
+
+==================================================
+SECTION 5a: BUGS WITH PRODUCT (APPROVAL/DISCUSSION) COUNT RULES
+==================================================
+
+"Bugs With Product (Approval/Discussion)" must include valid bugs where
+Status is one of:
+
+• "Ready for UAT"
+• "Product UAT IP"
+
+Include:
+• Linked bugs awaiting product approval or in UAT discussion
+
+Output format:
+Bugs With Product (Approval/Discussion): <count>
+
+
+==================================================
+SECTION 6: CLOSED BUGS COUNT RULES
+==================================================
+
+"Closed Bugs" must include valid bugs where:
+
+• Status = "Released"
+
+Include:
+• Successfully deployed production bugs
+
+Exclude:
+• Dev statuses
+• QA statuses
+• 'Not a Bug' and 'Duplicate' in Resolution
+
+Output format:
+Closed Bugs: <count>
+
+==================================================
+SECTION 7: Preprod Status
+==================================================
+
+Definition:
+"Preprod Status" should show tickets that have moved into
+Pre-Production stages.
+
+1. If Status = Released, Beta Deployed, or Deployment Completed:
+   Preprod Status = "Completed"
+
+2. Else, if Status in Ready for SIT, SIT In Progress, Ready For Release:
+   Preprod Status = "In-progress"
+
+3. Otherwise: Preprod Status = "Pending"
+
+==================================================
+SECTION 8: UAT Status
+==================================================
+
+Definition:
+"UAT Status" should show tickets that have moved into
+User Acceptance Testing stages.
+
+1. If Status = Released, Beta Deployed, or Deployment Completed:
+   UAT Status = "Completed"
+
+2. Else, if Preprod Status = In-progress (Ready for SIT, SIT In Progress, Ready For Release):
+   UAT Status = "Completed"
+
+3. Else, if Status in Ready for UAT, UAT In Progress, Product UAT IP:
+   UAT Status = "In-UAT"
+
+4. Otherwise: UAT Status = "Pending"
+
+
+==================================================
+SECTION 9: ENVIRONMENT ISSUE RULES
+==================================================
+
+Definition:
+"Environment Issue" value must always reflect
+the TOTAL number of LED tickets attached to JIRA.
+
+1. Value Calculation:
+   - Count ALL LED tickets linked to JIRA
+     (regardless of status).
+
+2. Open LED Handling:
+   - Identify LEDs where Status = "Open".
+
+3. Output Rules:
+
+A) If Total LED = 0:
+   Display:
+
+   Environment Issues: 0
+   No LED tickets linked to JIRA
+
+B) If Total LED > 0 AND Open LED > 0:
+   Display:
+
+   Environment Issues: <Total LED Count>
+
+   <Open LED Count> LED(s) in Open status:
+
+   • <LED-ID> – <LED Summary> (Assignee: <Name>)
+
+   • <LED-ID> – <LED Summary> (Assignee: <Name>)
+
+C) If Total LED > 0 AND Open LED = 0:
+   Display:
+
+   Environment Issues: <Total LED Count>
+   No LED tickets are currently in Open status
+
+
+==================================================
+SECTION 10: INTERNAL PEDS RULES
+==================================================
+
+Definition:
+"Internal PEDS" count = number of linked issues with Issue Type
+"PEDS Internal" or "Internal PEDS".
+
+1. Value Calculation:
+   - Count linked issues where issuetype = "PEDS Internal" or "Internal PEDS"
+
+2. Output format:
+   Internal PEDS: <count>
+
+
+==================================================
+END OF FILE
+==================================================

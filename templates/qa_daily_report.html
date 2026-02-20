@@ -12,15 +12,14 @@
     <p class="mt-1 text-sm text-slate-400">Generate and post the QA daily report to Slack</p>
   </header>
 
-  <div id="form_error_banner" class="hidden mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3" role="alert">
-    <svg class="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-    <div class="min-w-0 flex-1">
-      <p class="text-sm font-medium text-amber-200 mb-0.5">We couldn’t complete your request</p>
-      <p id="form_error_text" class="text-sm text-slate-300 leading-relaxed"></p>
+  <form id="daily_form" class="rounded-2xl border border-slate-700/80 bg-slate-900/80 shadow-xl shadow-slate-900/50 p-6 space-y-5 backdrop-blur" novalidate>
+    <div id="form_error_banner" class="hidden mb-4 rounded-xl border-2 border-amber-500/60 bg-amber-500/20 p-4 flex items-start gap-3 shadow-lg shadow-amber-500/10" role="alert" aria-live="assertive" tabindex="-1">
+      <svg class="w-6 h-6 text-amber-400 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold text-amber-200 mb-1">We couldn't complete your request</p>
+        <p id="form_error_text" class="text-sm text-amber-100/95 leading-relaxed"></p>
+      </div>
     </div>
-  </div>
-
-  <form id="daily_form" class="rounded-2xl border border-slate-700/80 bg-slate-900/80 shadow-xl shadow-slate-900/50 p-6 space-y-5 backdrop-blur">
     <!-- Set up section (collapsed by default). overflow-visible so dropdown shows below trigger. -->
     <details class="group/setup rounded-xl border border-slate-700/60 bg-slate-800/40 overflow-visible" id="section_setup">
       <summary class="flex items-center justify-between gap-2 cursor-pointer list-none px-4 py-3 text-sm font-medium text-cyan-300 hover:bg-slate-700/40 transition-colors rounded-t-xl [&::-webkit-details-marker]:hidden">
@@ -38,8 +37,6 @@
             required
             class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors"
           />
-          <p class="col-start-2 text-xs text-slate-500 mt-1">Required. Comma-separated for multiple issues.</p>
-
           <label for="slack_channel_id" class="text-sm font-medium text-cyan-300 py-2 flex items-center gap-1.5">
             Slack Channel ID <span class="text-rose-400">*</span>
             <span class="group/info relative inline-flex">
@@ -93,9 +90,11 @@
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="total_bugs" data-label="Total Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Total Bugs</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_dev" data-label="Bugs With Dev"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With Dev</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_qa" data-label="Bugs With QA"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With QA</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="bugs_with_product" data-label="Bugs With Product (Approval/Discussion)"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Bugs With Product (Approval/Discussion)</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="closed_bugs" data-label="Closed Bugs"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Closed Bugs</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="challenges" data-label="Challenges"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Challenges</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="environment_issue" data-label="Environment Issue"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Environment Issue</label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="internal_peds" data-label="Internal PEDS"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Internal PEDS</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="targetted_release_date" data-label="Targetted Release Date"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Targetted Release Date</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="uat_status" data-label="UAT Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> UAT Status</label>
                 <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-300 hover:text-white report-output-option" data-value="preprod_status" data-label="Preprod Status"><input type="checkbox" class="report-output-cb rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50" /> Preprod Status</label>
@@ -113,10 +112,13 @@
         <svg class="w-4 h-4 shrink-0 text-slate-500 transition-transform group-open/schedule:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
       </summary>
       <div class="px-4 pt-4 pb-4 space-y-5 border-t border-slate-600/60">
-        <p class="text-xs text-slate-500">Optional. Set report start and end date. Choose daily run time. Leave empty to run now.</p>
-        <div class="flex items-center gap-2 rounded-lg bg-slate-900/60 px-3 py-2 border border-slate-600/60">
-          <span class="text-xs font-medium text-slate-400">Frequency</span>
-          <span class="text-sm text-cyan-300">Daily</span>
+        <p class="text-xs text-slate-500">Optional. Set report start and end date. Choose run time. Leave empty to run now.</p>
+        <div class="space-y-1.5">
+          <label for="schedule_frequency" class="block text-sm font-medium text-slate-300">Frequency</label>
+          <select id="schedule_frequency" name="schedule_frequency" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark]">
+            <option value="daily">Daily</option>
+            <option value="3min">Every 3 min (for testing)</option>
+          </select>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div class="space-y-1.5">
@@ -125,8 +127,10 @@
               type="date"
               id="schedule_start_date"
               name="schedule_start_date"
+              min="{{ schedule_min_date|default('') }}" data-max-end="{{ schedule_max_end_date|default('') }}"
               class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors [color-scheme:dark]"
             />
+            <p id="schedule_start_date_error" class="hidden text-xs text-rose-400"></p>
           </div>
           <div class="space-y-1.5">
             <label for="schedule_end_date" class="block text-sm font-medium text-slate-300">End Date</label>
@@ -134,8 +138,10 @@
               type="date"
               id="schedule_end_date"
               name="schedule_end_date"
-              class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors [color-scheme:dark]"
+              disabled
+              class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed"
             />
+            <p id="schedule_end_date_error" class="hidden text-xs text-rose-400"></p>
           </div>
         </div>
         <div class="space-y-1.5">
@@ -158,7 +164,7 @@
             </select>
           </div>
         </div>
-        <p class="text-xs text-slate-500">Report will run daily at the selected time between start and end date. Ensure the app is running for scheduled runs.</p>
+        <p class="text-xs text-slate-500" id="schedule_frequency_hint">Report will run daily at the selected time between start and end date. Ensure the app is running for scheduled runs.</p>
       </div>
     </details>
 
@@ -170,44 +176,30 @@
       </summary>
       <div class="px-4 pt-4 pb-4 space-y-4 border-t border-slate-600/60">
         <label class="flex items-center gap-3 cursor-pointer group">
-          <input type="radio" name="output_option" value="channel" checked class="border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50 focus:ring-offset-slate-800" />
+          <input type="radio" name="output_option" value="channel" class="border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500/50 focus:ring-offset-slate-800" />
           <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Channel</span>
         </label>
         <label class="flex items-center gap-3 cursor-pointer group">
-          <input type="radio" name="output_option" value="review" class="border-slate-500 bg-slate-700 text-violet-400 focus:ring-violet-500/50 focus:ring-offset-slate-800" />
-          <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Post Report To Review</span>
+          <input type="radio" name="output_option" value="review" checked class="border-slate-500 bg-slate-700 text-violet-400 focus:ring-violet-500/50 focus:ring-offset-slate-800" />
+          <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Review Report and Post to Channel</span>
         </label>
         <label class="flex items-center gap-3 cursor-pointer group">
           <input type="radio" name="output_option" value="preview" class="border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-slate-800" />
           <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Generate Report To Preview</span>
         </label>
+        <div id="review_options" class="hidden pt-2 space-y-2 border-t border-slate-600/60 mt-2">
+          <label for="slack_user_id" class="block text-sm font-medium text-cyan-300">Slack User ID <span class="text-rose-400">*</span></label>
+          <input
+            type="text"
+            id="slack_user_id"
+            name="slack_user_id"
+            placeholder="e.g. U01234ABCD"
+            class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60 focus:border-violet-500/50 transition-colors"
+          />
+          <p class="text-xs text-slate-500">Report sent as DM &amp; ephemeral to this user (visible only to them until they click Post).</p>
+        </div>
       </div>
     </details>
-
-    <div id="review_options" class="hidden space-y-3 rounded-xl border border-violet-500/30 bg-slate-800/40 p-4">
-      <p class="text-sm font-medium text-violet-300">Post Report To Review</p>
-      <div>
-        <div class="flex items-center gap-1.5 mb-1.5">
-          <label for="slack_user_id" class="text-sm font-medium text-cyan-300">Slack User ID <span class="text-rose-400">*</span></label>
-          <span class="group/userinfo relative inline-flex">
-            <svg class="w-4 h-4 text-slate-500 hover:text-violet-400 cursor-help transition-colors" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
-            <span class="absolute left-0 top-full mt-1.5 hidden group-hover/userinfo:block z-10 w-72 px-3 py-2 text-xs font-normal text-slate-200 bg-slate-800 border border-slate-600 rounded-lg shadow-lg whitespace-normal">
-              Required to send the report as a direct message. To get a user ID in Slack: click the user's name → View profile → copy the user ID (shown at the bottom of the profile or in the profile URL, e.g. U01234ABCD).
-            </span>
-          </span>
-        </div>
-        <input
-          type="text"
-          id="slack_user_id"
-          name="slack_user_id"
-          placeholder="e.g. U01234ABCD"
-          class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60 focus:border-violet-500/50 transition-colors"
-        />
-        <p class="mt-1 text-xs text-slate-500">Required to send the report to review. Report will be sent as a direct message to this user.</p>
-      </div>
-    </div>
 
     <div class="pt-4 border-t border-slate-700/80">
       <button
@@ -262,11 +254,83 @@
   const reportPreview = document.getElementById('report_preview');
   const resultLog = document.getElementById('result_log');
   const reviewOptions = document.getElementById('review_options');
+  const slackUserIdInput = document.getElementById('slack_user_id');
   const outputOptionInputs = document.querySelectorAll('input[name="output_option"]');
 
+  function syncReviewOptionsVisibility() {
+    const isReview = document.querySelector('input[name="output_option"]:checked')?.value === 'review';
+    reviewOptions.classList.toggle('hidden', !isReview);
+    slackUserIdInput.required = isReview;
+  }
+  outputOptionInputs.forEach((input) => input.addEventListener('change', syncReviewOptionsVisibility));
+  syncReviewOptionsVisibility();
+
+  (function scheduleFrequencyHint() {
+    var freqSelect = document.getElementById('schedule_frequency');
+    var hint = document.getElementById('schedule_frequency_hint');
+    if (!freqSelect || !hint) return;
+    function updateHint() {
+      hint.textContent = freqSelect.value === '3min'
+        ? 'Report will run every 3 minutes between start and end date. End date is required.'
+        : 'Report will run daily at the selected time between start and end date. Ensure the app is running for scheduled runs.';
+    }
+    freqSelect.addEventListener('change', updateHint);
+  })();
+
+  (function scheduleDateValidation() {
+    var startInput = document.getElementById('schedule_start_date');
+    var endInput = document.getElementById('schedule_end_date');
+    var startError = document.getElementById('schedule_start_date_error');
+    var endError = document.getElementById('schedule_end_date_error');
+    if (!startInput || !endInput) return;
+    var minDate = startInput.getAttribute('min') || '';
+    var maxEndDate = startInput.getAttribute('data-max-end') || '';
+
+    function clearErrors() {
+      if (startError) { startError.classList.add('hidden'); startError.textContent = ''; }
+      if (endError) { endError.classList.add('hidden'); endError.textContent = ''; }
+    }
+
+    function syncEndDateState() {
+      var startVal = startInput.value.trim();
+      if (startVal) {
+        endInput.disabled = false;
+        endInput.min = startVal;
+        endInput.max = maxEndDate;
+        if (endInput.value && endInput.value < startVal) endInput.value = '';
+      } else {
+        endInput.disabled = true;
+        endInput.value = '';
+        endInput.min = '';
+        endInput.max = '';
+      }
+      clearErrors();
+    }
+
+    startInput.addEventListener('change', syncEndDateState);
+    startInput.addEventListener('input', syncEndDateState);
+    endInput.addEventListener('change', clearErrors);
+    endInput.addEventListener('input', clearErrors);
+    syncEndDateState();
+  })();
+
+  (function accordionBehavior() {
+    const allDetails = document.querySelectorAll('#section_setup, #section_schedule, #section_output');
+    allDetails.forEach(function (details) {
+      details.addEventListener('toggle', function () {
+        if (details.open) {
+          allDetails.forEach(function (other) {
+            if (other !== details) other.removeAttribute('open');
+          });
+        }
+      });
+    });
+  })();
+
   function friendlyError(msg) {
-    if (!msg || typeof msg !== 'string') return msg || 'Something went wrong. Please try again.';
-    const s = msg.trim();
+    if (!msg || typeof msg !== 'string') return 'Something went wrong. Please try again.';
+    const s = String(msg).trim();
+    if (!s) return 'Something went wrong. Please try again.';
     if (s.indexOf('Slack Channel ID is incorrect or empty') !== -1) {
       return 'Slack Channel ID is incorrect or empty. Please enter a valid channel ID (e.g. C0AFTQD06MP).';
     }
@@ -279,18 +343,19 @@
     if (s.indexOf('Slack Channel ID is required') !== -1) {
       return 'Slack Channel ID is required to read conversations and create Challenges. Please enter a valid channel ID.';
     }
+    if (s.indexOf('Please enter at least one JIRA Id') !== -1) return s;
     if (s.indexOf('Slack User ID is incorrect or empty') !== -1) {
       return 'Slack User ID is incorrect or empty. Please enter a valid user ID (e.g. U01234ABCD).';
     }
     if (s.indexOf('Slack User ID not found or incorrect') !== -1) {
       return 'The Slack User ID could not be found or is incorrect.';
     }
-    if (s.indexOf('Please enter at least one JIRA Id') !== -1) return s;
     if (s.indexOf('Slack User ID is required') !== -1) {
-      return 'Slack User ID is required to send the report to review. Please enter a valid user ID.';
+      return 'Slack User ID is required for Review Report and Post to Channel. Please enter a valid user ID.';
     }
-    if (s.indexOf('Please enter Slack User ID') !== -1) return s;
-    return s;
+    if (s.indexOf('Generation failed') !== -1) return 'The report could not be generated. Please check your inputs and try again.';
+    if (s.indexOf('timed out') !== -1) return 'The request took too long. Please try again.';
+    return s || 'Something went wrong. Please try again.';
   }
 
   function showRightPanelLoading() {
@@ -305,24 +370,15 @@
     resultStatus.className = 'mb-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-slate-900/80 px-4 py-2 text-emerald-400 text-sm';
     resultStatus.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg><span>' + (message || 'Report generated.') + '</span>';
   }
-  function showRightPanelError(msg) {
+  function showRightPanelError(msg, sectionToOpen) {
     resultLoading.classList.add('hidden');
     resultStatus.classList.add('hidden');
-    formErrorText.textContent = friendlyError(msg);
+    var displayMsg = friendlyError(msg) || 'Something went wrong. Please try again.';
+    formErrorText.textContent = displayMsg;
     formErrorBanner.classList.remove('hidden');
-    formErrorBanner.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  const slackUserIdInput = document.getElementById('slack_user_id');
-  outputOptionInputs.forEach((input) => {
-    input.addEventListener('change', () => {
-      const isReview = document.querySelector('input[name="output_option"]:checked')?.value === 'review';
-      reviewOptions.classList.toggle('hidden', !isReview);
-      slackUserIdInput.required = isReview;
-    });
-  });
-  if (document.querySelector('input[name="output_option"]:checked')?.value === 'review') {
-    slackUserIdInput.required = true;
+    if (sectionToOpen) sectionToOpen.setAttribute('open', '');
+    formErrorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(function () { formErrorBanner.focus({ preventScroll: true }); }, 350);
   }
 
   (function reportOutputMultiselect() {
@@ -417,6 +473,7 @@
     const startMinute = document.getElementById('schedule_start_minute').value;
     const startAmPm = document.getElementById('schedule_start_ampm').value;
     const time24 = time12to24(startHour, startMinute, startAmPm);
+    const frequency = document.getElementById('schedule_frequency').value || 'daily';
     let scheduleStart = null;
     let scheduleEnd = null;
     if (scheduleStartDate && startHour) scheduleStart = scheduleStartDate + 'T' + time24;
@@ -424,16 +481,79 @@
     if (scheduleEndDate && startHour) scheduleEnd = scheduleEndDate + 'T' + time24;
     else if (scheduleEndDate) scheduleEnd = scheduleEndDate + 'T23:59:00';
 
+    var sectionSetup = document.getElementById('section_setup');
+    var sectionSchedule = document.getElementById('section_schedule');
+    var sectionOutput = document.getElementById('section_output');
     if (!issueKeys) {
-      showRightPanelError('Please enter at least one JIRA Id.');
+      showRightPanelError('Please enter at least one JIRA Id.', sectionSetup);
       resultLog.textContent = '';
       return;
     }
     const slackChannelIdVal = document.getElementById('slack_channel_id').value.trim();
     if (!slackChannelIdVal) {
-      showRightPanelError('Slack Channel ID is required to read conversations and create Challenges.');
+      showRightPanelError('Slack Channel ID is required to read conversations and create Challenges.', sectionSetup);
       resultLog.textContent = '';
       return;
+    }
+    if (outputOption === 'review' && !slackUserId) {
+      showRightPanelError('Slack User ID is required for Review Report and Post to Channel.', sectionOutput);
+      resultLog.textContent = '';
+      return;
+    }
+    var startDateErr = document.getElementById('schedule_start_date_error');
+    var endDateErr = document.getElementById('schedule_end_date_error');
+    if (startDateErr) { startDateErr.classList.add('hidden'); startDateErr.textContent = ''; }
+    if (endDateErr) { endDateErr.classList.add('hidden'); endDateErr.textContent = ''; }
+
+    if (scheduleEndDate && !scheduleStartDate) {
+      if (startDateErr) { startDateErr.textContent = 'Start Date is required when End Date is selected'; startDateErr.classList.remove('hidden'); }
+      showRightPanelError('Start Date is required when End Date is selected.', sectionSchedule);
+      resultLog.textContent = '';
+      return;
+    }
+    if (scheduleStartDate && !scheduleEndDate) {
+      if (endDateErr) { endDateErr.textContent = 'End Date is required when Start Date is selected'; endDateErr.classList.remove('hidden'); }
+      showRightPanelError('End Date is required when Start Date is selected.', sectionSchedule);
+      resultLog.textContent = '';
+      return;
+    }
+    var todayIso = new Date().toISOString().slice(0, 10);
+    if (scheduleStartDate && scheduleStartDate < todayIso) {
+      if (startDateErr) { startDateErr.textContent = 'Start Date cannot be earlier than today'; startDateErr.classList.remove('hidden'); }
+      showRightPanelError('Start Date cannot be earlier than today.', sectionSetup);
+      resultLog.textContent = '';
+      return;
+    }
+    if (scheduleStartDate && scheduleEndDate && scheduleEndDate <= scheduleStartDate) {
+      if (endDateErr) { endDateErr.textContent = 'End Date must be after Start Date'; endDateErr.classList.remove('hidden'); }
+      showRightPanelError('End Date must be after Start Date.', sectionSetup);
+      resultLog.textContent = '';
+      return;
+    }
+    var maxEnd = document.getElementById('schedule_start_date')?.getAttribute('data-max-end') || '';
+    if (scheduleEndDate && maxEnd && scheduleEndDate > maxEnd) {
+      if (endDateErr) { endDateErr.textContent = 'End Date cannot exceed the maximum scheduling window'; endDateErr.classList.remove('hidden'); }
+      showRightPanelError('End Date cannot exceed the maximum scheduling window.', sectionSetup);
+      resultLog.textContent = '';
+      return;
+    }
+    if (frequency === '3min' && scheduleStartDate && !scheduleEndDate) {
+      if (endDateErr) { endDateErr.textContent = 'End date is required for 3 min frequency'; endDateErr.classList.remove('hidden'); }
+      showRightPanelError('End date is required for 3 min frequency.', sectionSetup);
+      resultLog.textContent = '';
+      return;
+    }
+    if (scheduleStartDate && scheduleStartDate === todayIso && startHour) {
+      var now = new Date();
+      var selectedH = parseInt(startHour, 10); if (startAmPm === 'PM' && selectedH !== 12) selectedH += 12; if (startAmPm === 'AM' && selectedH === 12) selectedH = 0;
+      var selectedM = parseInt(startMinute, 10) || 0;
+      var selectedMins = selectedH * 60 + selectedM;
+      var nowMins = now.getHours() * 60 + now.getMinutes();
+      if (selectedMins <= nowMins) {
+        var tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        scheduleStart = tomorrow.toISOString().slice(0, 10) + 'T' + time24;
+      }
     }
     showRightPanelLoading();
     submitBtn.disabled = true;
@@ -450,7 +570,7 @@
           report_output_keys: reportOutputKeys ? reportOutputKeys.split(',') : [],
           schedule_start: scheduleStart,
           schedule_end: scheduleEnd,
-          frequency: 'daily'
+          frequency: frequency
         })
       });
       const data = await res.json();
@@ -463,11 +583,11 @@
         reportPreview.textContent = data.report || '';
         resultLog.textContent = data.log || '';
       } else {
-        showRightPanelError(data.error || 'Generation failed.');
+        showRightPanelError(data.error || 'Generation failed.', null);
         resultLog.textContent = data.log || '';
       }
     } catch (err) {
-      showRightPanelError(err.message || 'Network or server error.');
+      showRightPanelError(err.message || 'Network or server error.', null);
       resultLog.textContent = '';
     }
     submitBtn.disabled = false;
