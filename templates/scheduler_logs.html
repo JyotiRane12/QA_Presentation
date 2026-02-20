@@ -18,9 +18,9 @@
           <tr class="border-b border-slate-600 bg-slate-800/80">
             <th class="px-4 py-3 font-semibold text-cyan-300">Task Type</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">JIRA ID</th>
-            <th class="px-4 py-3 font-semibold text-cyan-300">Scheduler Start Date</th>
-            <th class="px-4 py-3 font-semibold text-cyan-300">Scheduler End Date</th>
-            <th class="px-4 py-3 font-semibold text-cyan-300">Scheduler Time (Daily)</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Start Date</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">End Date</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300">Time</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">Report Output</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">Status</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">Actions</th>
@@ -98,38 +98,41 @@
             {% endfor %}
           </div>
         </div>
-        <div>
-          <label for="edit_start_date" class="block text-sm font-medium text-slate-300 mb-1">Start Date</label>
-          <input type="date" id="edit_start_date" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white [color-scheme:dark]" />
+        <div class="space-y-1.5">
+          <label for="edit_frequency" class="block text-sm font-medium text-slate-300">Frequency</label>
+          <select id="edit_frequency" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark]">
+            <option value="daily">Daily</option>
+            <option value="3min">Every 3 min (for testing)</option>
+          </select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">Start Time (12hr)</label>
-          <div class="flex gap-2">
-            <select id="edit_start_hour" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
-              <option value="12">12</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option>
-            </select>
-            <select id="edit_start_minute" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
-              <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
-            </select>
-            <select id="edit_start_ampm" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
-              <option value="AM">AM</option><option value="PM">PM</option>
-            </select>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div class="space-y-1.5">
+            <label for="edit_start_date" class="block text-sm font-medium text-slate-300">Start Date</label>
+            <input type="date" id="edit_start_date" data-min-date="{{ schedule_min_date|default('') }}" data-max-end-date="{{ schedule_max_end_date|default('') }}" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors [color-scheme:dark]" />
+            <p id="edit_start_date_error" class="hidden text-xs text-rose-400"></p>
+          </div>
+          <div class="space-y-1.5">
+            <label for="edit_end_date" class="block text-sm font-medium text-slate-300">End Date</label>
+            <input type="date" id="edit_end_date" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500/50 transition-colors [color-scheme:dark]" />
+            <p id="edit_end_date_error" class="hidden text-xs text-rose-400"></p>
           </div>
         </div>
-        <div>
-          <label for="edit_end_date" class="block text-sm font-medium text-slate-300 mb-1">End Date</label>
-          <input type="date" id="edit_end_date" class="w-full rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-white [color-scheme:dark]" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">End Time (12hr)</label>
-          <div class="flex gap-2">
-            <select id="edit_end_hour" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+        <div class="space-y-1.5">
+          <label class="block text-sm font-medium text-slate-300">Time (Daily Run)</label>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="edit_start_hour" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark]">
               <option value="12">12</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option>
             </select>
-            <select id="edit_end_minute" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
-              <option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+            <span class="text-slate-400">:</span>
+            <select id="edit_start_minute" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark] min-w-[4rem]">
+              <option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option>
+              <option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option>
+              <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option>
+              <option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option>
+              <option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option>
+              <option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
             </select>
-            <select id="edit_end_ampm" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white [color-scheme:dark]">
+            <select id="edit_start_ampm" class="rounded-xl border border-slate-600 bg-slate-800/80 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark]">
               <option value="AM">AM</option><option value="PM">PM</option>
             </select>
           </div>
@@ -215,15 +218,28 @@
       var log = logs.find(function (l) { return l.id === id; });
       if (!log) return;
       document.getElementById('edit_id').value = id;
+      document.getElementById('edit_frequency').value = (log.frequency || 'daily').toLowerCase();
       document.getElementById('edit_start_date').value = log.scheduler_start_date || '';
       document.getElementById('edit_end_date').value = log.scheduler_end_date || '';
+      var startEl = document.getElementById('edit_start_date');
+      var endEl = document.getElementById('edit_end_date');
+      var minDate = startEl.getAttribute('data-min-date') || '';
+      var maxEnd = startEl.getAttribute('data-max-end-date') || '';
+      startEl.min = minDate;
+      if (log.scheduler_start_date) {
+        endEl.min = log.scheduler_start_date;
+        endEl.max = maxEnd;
+        if (log.scheduler_end_date && log.scheduler_end_date < log.scheduler_start_date) endEl.value = '';
+      } else {
+        endEl.min = '';
+        endEl.max = '';
+      }
+      document.getElementById('edit_start_date_error').classList.add('hidden');
+      document.getElementById('edit_end_date_error').classList.add('hidden');
       var startT = parseTime24(log.scheduler_time);
       document.getElementById('edit_start_hour').value = startT.hour;
       document.getElementById('edit_start_minute').value = startT.minute;
       document.getElementById('edit_start_ampm').value = startT.ampm;
-      document.getElementById('edit_end_hour').value = startT.hour;
-      document.getElementById('edit_end_minute').value = startT.minute;
-      document.getElementById('edit_end_ampm').value = 'PM';
       var keys = log.report_output_keys || [];
       editForm.querySelectorAll('.edit-report-cb').forEach(function (cb) {
         cb.checked = keys.indexOf(cb.value) !== -1;
@@ -232,6 +248,26 @@
       editModal.setAttribute('aria-hidden', 'false');
     });
   });
+
+  (function editDateSync() {
+    var startEl = document.getElementById('edit_start_date');
+    var endEl = document.getElementById('edit_end_date');
+    if (!startEl || !endEl) return;
+    startEl.addEventListener('change', function () {
+      var startVal = startEl.value.trim();
+      var maxEnd = startEl.getAttribute('data-max-end-date') || '';
+      if (startVal) {
+        endEl.min = startVal;
+        endEl.max = maxEnd;
+        if (endEl.value && endEl.value < startVal) endEl.value = '';
+      } else {
+        endEl.min = '';
+        endEl.max = '';
+      }
+      document.getElementById('edit_start_date_error').classList.add('hidden');
+      document.getElementById('edit_end_date_error').classList.add('hidden');
+    });
+  })();
 
   document.getElementById('edit_modal_cancel').addEventListener('click', function () {
     editModal.classList.add('hidden');
@@ -248,16 +284,51 @@
   editForm.addEventListener('submit', function (e) {
     e.preventDefault();
     var id = document.getElementById('edit_id').value;
-    var startDate = document.getElementById('edit_start_date').value;
-    var endDate = document.getElementById('edit_end_date').value;
-    var startHour = document.getElementById('edit_start_hour').value;
-    var startMinute = document.getElementById('edit_start_minute').value;
-    var startAmPm = document.getElementById('edit_start_ampm').value;
-    var endHour = document.getElementById('edit_end_hour').value;
-    var endMinute = document.getElementById('edit_end_minute').value;
-    var endAmPm = document.getElementById('edit_end_ampm').value;
-    var scheduleStart = startDate ? startDate + 'T' + time12to24(startHour, startMinute, startAmPm) : null;
-    var scheduleEnd = endDate ? endDate + 'T' + time12to24(endHour, endMinute, endAmPm) : null;
+    var frequency = document.getElementById('edit_frequency').value || 'daily';
+    var startDate = document.getElementById('edit_start_date').value.trim();
+    var endDate = document.getElementById('edit_end_date').value.trim();
+    var startErr = document.getElementById('edit_start_date_error');
+    var endErr = document.getElementById('edit_end_date_error');
+    if (startErr) { startErr.classList.add('hidden'); startErr.textContent = ''; }
+    if (endErr) { endErr.classList.add('hidden'); endErr.textContent = ''; }
+
+    if (endDate && !startDate) {
+      msg(messageEl, '', false);
+      msg(errorEl, 'Start Date is required when End Date is selected.', true);
+      if (startErr) { startErr.textContent = 'Start Date is required when End Date is selected'; startErr.classList.remove('hidden'); }
+      return;
+    }
+    if (startDate && !endDate) {
+      msg(messageEl, '', false);
+      msg(errorEl, 'End Date is required when Start Date is selected.', true);
+      if (endErr) { endErr.textContent = 'End Date is required when Start Date is selected'; endErr.classList.remove('hidden'); }
+      return;
+    }
+    if (startDate && endDate && endDate <= startDate) {
+      msg(messageEl, '', false);
+      msg(errorEl, 'End Date must be after Start Date.', true);
+      if (endErr) { endErr.textContent = 'End Date must be after Start Date'; endErr.classList.remove('hidden'); }
+      return;
+    }
+    var maxEnd = document.getElementById('edit_start_date')?.getAttribute('data-max-end-date') || '';
+    if (endDate && maxEnd && endDate > maxEnd) {
+      msg(messageEl, '', false);
+      msg(errorEl, 'End Date cannot exceed the maximum scheduling window.', true);
+      if (endErr) { endErr.textContent = 'End Date cannot exceed the maximum scheduling window'; endErr.classList.remove('hidden'); }
+      return;
+    }
+    if (frequency === '3min' && startDate && !endDate) {
+      msg(messageEl, '', false);
+      msg(errorEl, 'End date is required for 3 min frequency.', true);
+      if (endErr) { endErr.textContent = 'End date is required for 3 min frequency'; endErr.classList.remove('hidden'); }
+      return;
+    }
+    var hour = document.getElementById('edit_start_hour').value;
+    var minute = document.getElementById('edit_start_minute').value;
+    var ampm = document.getElementById('edit_start_ampm').value;
+    var time24 = time12to24(hour, minute, ampm);
+    var scheduleStart = startDate ? startDate + 'T' + time24 : null;
+    var scheduleEnd = endDate ? endDate + 'T' + time24 : null;
     var keys = [];
     editForm.querySelectorAll('.edit-report-cb:checked').forEach(function (cb) { keys.push(cb.value); });
     msg(errorEl, '', false);
@@ -268,6 +339,7 @@
       body: JSON.stringify({
         id: id,
         report_output_keys: keys,
+        frequency: frequency,
         schedule_start: scheduleStart,
         schedule_end: scheduleEnd
       })
