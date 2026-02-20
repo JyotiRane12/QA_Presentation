@@ -49,21 +49,26 @@
               {% endif %}
             </td>
             <td class="px-4 py-3">
-              {% if log.action_state == 'stopped' %}
-              <span class="text-slate-500 text-xs font-medium">Actions Not Allowed</span>
-              {% elif log.action_state == 'paused' %}
-              <div class="flex flex-wrap gap-1.5">
-                <button type="button" class="scheduler-resume rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium px-2.5 py-1.5 border border-cyan-500/40 hover:bg-cyan-500/30 transition-colors" data-id="{{ log.id }}">Resume</button>
-                <button type="button" class="scheduler-stop rounded-lg bg-slate-600/60 text-slate-300 text-xs font-medium px-2.5 py-1.5 border border-slate-500/50 hover:bg-slate-500/50 transition-colors" data-id="{{ log.id }}">Stop</button>
-                <button type="button" class="scheduler-edit rounded-lg bg-violet-500/20 text-violet-400 text-xs font-medium px-2.5 py-1.5 border border-violet-500/40 hover:bg-violet-500/30 transition-colors" data-id="{{ log.id }}">Edit</button>
+              <div class="relative inline-block row-actions-dropdown" data-log-id="{{ log.id }}" data-stopped="{{ 'true' if log.action_state == 'stopped' else 'false' }}">
+                <button type="button" class="row-actions-trigger rounded-lg p-2 text-slate-400 hover:bg-slate-700/60 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/60 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent" aria-label="Actions" aria-expanded="false" aria-haspopup="true">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+                <div class="row-actions-menu hidden absolute right-0 top-full mt-1 z-20 min-w-[8rem] rounded-lg border border-slate-600 bg-slate-800 shadow-xl py-1">
+                  {% if log.action_state == 'stopped' %}
+                  <span class="block px-4 py-2 text-sm text-slate-500 cursor-not-allowed">Resume</span>
+                  <span class="block px-4 py-2 text-sm text-slate-500 cursor-not-allowed">Pause</span>
+                  <span class="block px-4 py-2 text-sm text-slate-500 cursor-not-allowed">Edit</span>
+                  {% elif log.action_state == 'paused' %}
+                  <button type="button" class="scheduler-resume w-full text-left px-4 py-2 text-sm text-cyan-400 hover:bg-slate-700/80 transition-colors" data-id="{{ log.id }}">Resume</button>
+                  <button type="button" class="scheduler-stop w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700/80 transition-colors" data-id="{{ log.id }}">Stop</button>
+                  <button type="button" class="scheduler-edit w-full text-left px-4 py-2 text-sm text-violet-400 hover:bg-slate-700/80 transition-colors" data-id="{{ log.id }}">Edit</button>
+                  {% else %}
+                  <button type="button" class="scheduler-pause w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-slate-700/80 transition-colors" data-id="{{ log.id }}">Pause</button>
+                  <button type="button" class="scheduler-stop w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700/80 transition-colors" data-id="{{ log.id }}">Stop</button>
+                  <button type="button" class="scheduler-edit w-full text-left px-4 py-2 text-sm text-violet-400 hover:bg-slate-700/80 transition-colors" data-id="{{ log.id }}">Edit</button>
+                  {% endif %}
+                </div>
               </div>
-              {% else %}
-              <div class="flex flex-wrap gap-1.5">
-                <button type="button" class="scheduler-pause rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium px-2.5 py-1.5 border border-amber-500/40 hover:bg-amber-500/30 transition-colors" data-id="{{ log.id }}">Pause</button>
-                <button type="button" class="scheduler-stop rounded-lg bg-slate-600/60 text-slate-300 text-xs font-medium px-2.5 py-1.5 border border-slate-500/50 hover:bg-slate-500/50 transition-colors" data-id="{{ log.id }}">Stop</button>
-                <button type="button" class="scheduler-edit rounded-lg bg-violet-500/20 text-violet-400 text-xs font-medium px-2.5 py-1.5 border border-violet-500/40 hover:bg-violet-500/30 transition-colors" data-id="{{ log.id }}">Edit</button>
-              </div>
-              {% endif %}
             </td>
           </tr>
           {% else %}
@@ -75,6 +80,48 @@
       </table>
     </div>
   </div>
+
+  {% if pagination and pagination.total > 0 %}
+  <nav class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/60 bg-slate-800/40 px-4 py-3" aria-label="Pagination">
+    <div class="flex flex-wrap items-center gap-4">
+      <p class="text-sm text-slate-400">
+        Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }}–{{ [pagination.page * pagination.per_page, pagination.total]|min }} of {{ pagination.total }} task{{ 's' if pagination.total != 1 else '' }}
+      </p>
+      <div class="flex items-center gap-2">
+        <label for="per_page_select" class="text-sm text-slate-400">Show</label>
+        <select id="per_page_select" class="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60 [color-scheme:dark]" aria-label="Records per page">
+          {% for n in pagination.per_page_options %}
+          <option value="{{ n }}" {{ 'selected' if n == pagination.per_page else '' }}>{{ n }}</option>
+          {% endfor %}
+        </select>
+        <span class="text-sm text-slate-400">per page</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('scheduler_logs', page=pagination.prev_page, per_page=pagination.per_page) }}" class="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors">Previous</a>
+      {% else %}
+      <span class="rounded-lg border border-slate-700 bg-slate-800/40 px-3 py-2 text-sm text-slate-500 cursor-not-allowed">Previous</span>
+      {% endif %}
+      <span class="px-3 py-2 text-sm text-slate-300">Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+      {% if pagination.has_next %}
+      <a href="{{ url_for('scheduler_logs', page=pagination.next_page, per_page=pagination.per_page) }}" class="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700/60 hover:text-white transition-colors">Next</a>
+      {% else %}
+      <span class="rounded-lg border border-slate-700 bg-slate-800/40 px-3 py-2 text-sm text-slate-500 cursor-not-allowed">Next</span>
+      {% endif %}
+    </div>
+  </nav>
+  <script>
+  (function() {
+    var sel = document.getElementById('per_page_select');
+    var baseUrl = "{{ url_for('scheduler_logs') }}";
+    if (sel) sel.addEventListener('change', function() {
+      var perPage = this.value;
+      window.location.href = baseUrl + "?page=1&per_page=" + encodeURIComponent(perPage);
+    });
+  })();
+  </script>
+  {% endif %}
 
   <div id="actions_message" class="hidden mt-4 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-300"></div>
   <div id="actions_error" class="hidden mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-300"></div>
@@ -178,14 +225,40 @@
       });
   }
 
+  (function rowActionsDropdown() {
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('.row-actions-trigger');
+      var menu = e.target.closest('.row-actions-menu');
+      var dropdown = e.target.closest('.row-actions-dropdown');
+      if (trigger && dropdown) {
+        var wasOpen = dropdown.querySelector('.row-actions-menu').classList.contains('hidden');
+        document.querySelectorAll('.row-actions-menu').forEach(function (m) { m.classList.add('hidden'); });
+        dropdown.querySelector('.row-actions-menu').classList.toggle('hidden', !wasOpen);
+        dropdown.querySelector('.row-actions-trigger').setAttribute('aria-expanded', !wasOpen);
+      } else if (!menu && !trigger) {
+        document.querySelectorAll('.row-actions-menu').forEach(function (m) { m.classList.add('hidden'); });
+        document.querySelectorAll('.row-actions-trigger').forEach(function (t) { t.setAttribute('aria-expanded', 'false'); });
+      }
+    });
+  })();
+
   document.querySelectorAll('.scheduler-pause').forEach(function (btn) {
-    btn.addEventListener('click', function () { doAction('/api/scheduler-logs/pause', btn.getAttribute('data-id')); });
+    btn.addEventListener('click', function () {
+      btn.closest('.row-actions-dropdown')?.querySelector('.row-actions-menu')?.classList.add('hidden');
+      doAction('/api/scheduler-logs/pause', btn.getAttribute('data-id'));
+    });
   });
   document.querySelectorAll('.scheduler-stop').forEach(function (btn) {
-    btn.addEventListener('click', function () { doAction('/api/scheduler-logs/stop', btn.getAttribute('data-id')); });
+    btn.addEventListener('click', function () {
+      btn.closest('.row-actions-dropdown')?.querySelector('.row-actions-menu')?.classList.add('hidden');
+      doAction('/api/scheduler-logs/stop', btn.getAttribute('data-id'));
+    });
   });
   document.querySelectorAll('.scheduler-resume').forEach(function (btn) {
-    btn.addEventListener('click', function () { doAction('/api/scheduler-logs/resume', btn.getAttribute('data-id')); });
+    btn.addEventListener('click', function () {
+      btn.closest('.row-actions-dropdown')?.querySelector('.row-actions-menu')?.classList.add('hidden');
+      doAction('/api/scheduler-logs/resume', btn.getAttribute('data-id'));
+    });
   });
 
   var logsDataEl = document.getElementById('scheduler-logs-data');
@@ -214,6 +287,7 @@
 
   document.querySelectorAll('.scheduler-edit').forEach(function (btn) {
     btn.addEventListener('click', function () {
+      btn.closest('.row-actions-dropdown')?.querySelector('.row-actions-menu')?.classList.add('hidden');
       var id = btn.getAttribute('data-id');
       var log = logs.find(function (l) { return l.id === id; });
       if (!log) return;
@@ -291,6 +365,27 @@
     var endErr = document.getElementById('edit_end_date_error');
     if (startErr) { startErr.classList.add('hidden'); startErr.textContent = ''; }
     if (endErr) { endErr.classList.add('hidden'); endErr.textContent = ''; }
+
+    function isValidDateStr(val) {
+      if (!val || !/^\d{4}-\d{2}-\d{2}$/.test(val)) return false;
+      var parts = val.split('-');
+      var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
+      if (m < 1 || m > 12 || d < 1) return false;
+      var test = new Date(y, m - 1, d);
+      return test.getFullYear() === y && test.getMonth() === m - 1 && test.getDate() === d;
+    }
+    if (startDate && !isValidDateStr(startDate)) {
+      msg(messageEl, '', false);
+      msg(errorEl, 'Please enter a valid Start Date (YYYY-MM-DD).', true);
+      if (startErr) { startErr.textContent = 'Please enter a valid Start Date (YYYY-MM-DD)'; startErr.classList.remove('hidden'); }
+      return;
+    }
+    if (endDate && !isValidDateStr(endDate)) {
+      msg(messageEl, '', false);
+      msg(errorEl, 'Please enter a valid End Date (YYYY-MM-DD).', true);
+      if (endErr) { endErr.textContent = 'Please enter a valid End Date (YYYY-MM-DD)'; endErr.classList.remove('hidden'); }
+      return;
+    }
 
     if (endDate && !startDate) {
       msg(messageEl, '', false);
