@@ -505,6 +505,27 @@
     if (startDateErr) { startDateErr.classList.add('hidden'); startDateErr.textContent = ''; }
     if (endDateErr) { endDateErr.classList.add('hidden'); endDateErr.textContent = ''; }
 
+    function isValidDateStr(val) {
+      if (!val || !/^\d{4}-\d{2}-\d{2}$/.test(val)) return false;
+      var parts = val.split('-');
+      var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
+      if (m < 1 || m > 12 || d < 1) return false;
+      var test = new Date(y, m - 1, d);
+      return test.getFullYear() === y && test.getMonth() === m - 1 && test.getDate() === d;
+    }
+    if (scheduleStartDate && !isValidDateStr(scheduleStartDate)) {
+      if (startDateErr) { startDateErr.textContent = 'Please enter a valid Start Date (YYYY-MM-DD)'; startDateErr.classList.remove('hidden'); }
+      showRightPanelError('Please enter a valid Start Date (YYYY-MM-DD).', sectionSchedule);
+      resultLog.textContent = '';
+      return;
+    }
+    if (scheduleEndDate && !isValidDateStr(scheduleEndDate)) {
+      if (endDateErr) { endDateErr.textContent = 'Please enter a valid End Date (YYYY-MM-DD)'; endDateErr.classList.remove('hidden'); }
+      showRightPanelError('Please enter a valid End Date (YYYY-MM-DD).', sectionSchedule);
+      resultLog.textContent = '';
+      return;
+    }
+
     if (scheduleEndDate && !scheduleStartDate) {
       if (startDateErr) { startDateErr.textContent = 'Start Date is required when End Date is selected'; startDateErr.classList.remove('hidden'); }
       showRightPanelError('Start Date is required when End Date is selected.', sectionSchedule);

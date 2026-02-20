@@ -69,6 +69,25 @@ def _save_scheduler_jobs(jobs: list[dict]) -> None:
         json.dump(jobs, f, indent=2)
 
 
+def _parse_and_validate_date(s: str, field_name: str) -> tuple[datetime | None, str | None]:
+    """Parse date from ISO string. Returns (datetime, error_msg). Error is None on success."""
+    s = (s or "").strip()
+    if not s:
+        return None, None
+    # Extract date part (YYYY-MM-DD) - must be exactly 10 chars
+    date_part = (s.split("T")[0].split(" ")[0] if "T" in s or " " in s else s)
+    if len(date_part) < 10:
+        return None, f"Please enter a valid {field_name} (YYYY-MM-DD)"
+    date_part = date_part[:10]
+    if date_part[4] != "-" or date_part[7] != "-":
+        return None, f"Please enter a valid {field_name} (YYYY-MM-DD)"
+    try:
+        d = date.fromisoformat(date_part)
+    except ValueError:
+        return None, f"Please enter a valid {field_name} (invalid month or day)"
+    return datetime.combine(d, datetime.min.time()), None
+
+
 def _validate_schedule_dates(
     schedule_start: str | None,
     schedule_end: str | None,
@@ -91,10 +110,18 @@ def _validate_schedule_dates(
         return None, None, "End Date is required when Start Date is selected"
 
     if schedule_start:
-        try:
-            start_dt = datetime.fromisoformat(schedule_start.replace("Z", "+00:00"))
-        except ValueError:
-            return None, None, "Please enter a valid Start Date (dd/mm/yyyy)"
+        start_dt, err = _parse_and_validate_date(schedule_start, "Start Date")
+        if err:
+            return None, None, err
+        if start_dt is None:
+            return None, None, "Please enter a valid Start Date (YYYY-MM-DD)"
+        # Preserve time if present
+        if "T" in schedule_start:
+            try:
+                full = datetime.fromisoformat(schedule_start.replace("Z", "+00:00"))
+                start_dt = full
+            except ValueError:
+                pass
         if not for_edit and start_dt.date() < today:
             return None, None, "Start Date cannot be earlier than today"
     else:
@@ -102,10 +129,17 @@ def _validate_schedule_dates(
 
     end_dt = None
     if schedule_end:
-        try:
-            end_dt = datetime.fromisoformat(schedule_end.replace("Z", "+00:00"))
-        except ValueError:
-            return None, None, "Please enter a valid End Date (dd/mm/yyyy)"
+        end_dt, err = _parse_and_validate_date(schedule_end, "End Date")
+        if err:
+            return None, None, err
+        if end_dt is None:
+            return None, None, "Please enter a valid End Date (YYYY-MM-DD)"
+        if "T" in schedule_end:
+            try:
+                full = datetime.fromisoformat(schedule_end.replace("Z", "+00:00"))
+                end_dt = full
+            except ValueError:
+                pass
         if start_dt and end_dt.date() <= start_dt.date():
             return None, None, "End Date must be after Start Date"
         if end_dt.date() > max_end_date:
@@ -491,11 +525,17 @@ def _scheduler_log_status(log: dict) -> str:
     return "Completed"
 
 
+PER_PAGE_DEFAULT = 5
+PER_PAGE_OPTIONS = [5, 10, 15, 20, 25, 50]
+
+
 @app.route("/qa-daily-report/scheduler-logs")
 def scheduler_logs():
     logs_with_status = []
     for log in _scheduler_logs:
         log_copy = dict(log)
+        tt = (log_copy.get("task_type") or "").strip()
+        log_copy["task_type"] = " ".join(w if w.isupper() else w.capitalize() for w in tt.split()) if tt else "QA Daily Report"
         log_copy["status"] = _scheduler_log_status(log)
         keys = log_copy.get("report_output_keys") or []
         log_copy["report_output_labels"] = ", ".join(
@@ -510,15 +550,44 @@ def scheduler_logs():
         else:
             log_copy["scheduler_time_12hr"] = time_12hr
         logs_with_status.append(log_copy)
+
+    # Latest first (most recently created/scheduled on top)
+    logs_with_status.reverse()
+
+    per_page = request.args.get("per_page", PER_PAGE_DEFAULT, type=int)
+    if per_page not in PER_PAGE_OPTIONS:
+        per_page = PER_PAGE_DEFAULT
+
+    page = request.args.get("page", 1, type=int)
+    if page < 1:
+        page = 1
+    total = len(logs_with_status)
+    total_pages = max(1, (total + per_page - 1) // per_page) if total else 1
+    if page > total_pages:
+        page = total_pages
+    start = (page - 1) * per_page
+    logs_page = logs_with_status[start : start + per_page]
+
     today = datetime.now().date().isoformat()
     max_end = (datetime.now().date() + timedelta(days=180)).isoformat()
     return render_template(
         "scheduler_logs.html",
         active_page="scheduler_logs",
-        logs=logs_with_status,
+        logs=logs_page,
         report_output_options=list(REPORT_OUTPUT_LABELS.items()),
         schedule_min_date=today,
         schedule_max_end_date=max_end,
+        pagination={
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": total_pages,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+            "prev_page": page - 1 if page > 1 else None,
+            "next_page": page + 1 if page < total_pages else None,
+            "per_page_options": PER_PAGE_OPTIONS,
+        },
     )
 
 
@@ -807,7 +876,7 @@ def api_qa_daily_report():
             entry = {
                 "id": str(uuid.uuid4()),
                 "action_state": "active",
-                "task_type": "QA daily report",
+                "task_type": "QA Daily Report",
                 "jira_id": issue_keys,
                 "scheduler_start_date": start_dt.date().isoformat(),
                 "scheduler_end_date": end_dt.date().isoformat(),
@@ -845,7 +914,7 @@ def api_qa_daily_report():
             entry = {
                 "id": str(uuid.uuid4()),
                 "action_state": "active",
-                "task_type": "QA daily report",
+                "task_type": "QA Daily Report",
                 "jira_id": issue_keys,
                 "scheduler_start_date": start_dt.date().isoformat(),
                 "scheduler_end_date": "",
