@@ -12,3 +12,4 @@ __pycache__/
 .env.local
 reports/
 data/
+smartech-next/*.*
