@@ -149,7 +149,7 @@ def test_format_date_invalid():
 # ----- uat_status, preprod_status -----
 
 def test_uat_status_pending():
-    for status_name in ("Open", "QA IP", "Ready for SIT", "Released"):
+    for status_name in ("Open", "QA IP"):
         issue = {"fields": {"status": {"name": status_name}}}
         assert uat_status(issue) == "Pending", f"Expected Pending for {status_name}"
 
@@ -167,14 +167,14 @@ def test_preprod_status_pending():
 
 
 def test_preprod_status_in_progress():
-    for status_name in ("Ready for SIT", "SIT In Progress", "Ready For Release"):
+    for status_name in ("Ready for SIT", "SIT In Progress", "Ready For Release", "Ready for RP"):
         issue = {"fields": {"status": {"name": status_name}}}
         assert preprod_status(issue) == "In-progress", f"Expected In-progress for {status_name}"
 
 
 def test_uat_status_completed_when_preprod_in_progress():
-    """When Preprod is In-progress, UAT status should be Completed."""
-    for status_name in ("Ready for SIT", "SIT In Progress", "Ready For Release"):
+    """When Preprod is In-progress (incl. Ready for RP), UAT status should be Completed (BugCount.cursorrules Section 8)."""
+    for status_name in ("Ready for SIT", "SIT In Progress", "Ready For Release", "Ready for RP"):
         issue = {"fields": {"status": {"name": status_name}}}
         assert uat_status(issue) == "Completed", f"Expected Completed for {status_name}"
 

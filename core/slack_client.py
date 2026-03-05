@@ -9,6 +9,8 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from core import qa_report_db
+
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 logger = logging.getLogger(__name__)
@@ -86,20 +88,14 @@ def _format_bullets(text: str) -> str:
 
 
 def post_ephemeral_with_buttons(
-    channel_id: str, user_id: str, report_text: str, pending_dir: Path
+    channel_id: str, user_id: str, report_text: str, pending_dir: Path | None = None
 ) -> bool:
-    """Post ephemeral with Post/Edit buttons. Retries 3 times."""
+    """Post ephemeral with Post/Edit buttons. Retries 3 times. pending_dir is legacy (ignored; DB used)."""
     if not SLACK_BOT_TOKEN or not channel_id or not user_id:
         return False
     report_id = str(uuid.uuid4())
-    pending_dir.mkdir(parents=True, exist_ok=True)
-    pending_file = pending_dir / f"{report_id}.json"
-    try:
-        pending_file.write_text(
-            json.dumps({"report": report_text, "channel_id": channel_id}), encoding="utf-8"
-        )
-    except OSError as e:
-        logger.exception("Failed to save pending report: %s", e)
+    if not qa_report_db.save_pending_report(report_id, report_text, channel_id):
+        logger.exception("Failed to save pending report to DB")
         return False
     preview = report_text[:2500] + ("..." if len(report_text) > 2500 else "")
     blocks = [
@@ -127,7 +123,7 @@ def post_ephemeral_with_buttons(
     }
     ok = _post_with_retry("https://slack.com/api/chat.postEphemeral", payload)
     if not ok:
-        pending_file.unlink(missing_ok=True)
+        qa_report_db.delete_pending_report(report_id)
     return ok
 
 

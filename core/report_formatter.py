@@ -43,7 +43,7 @@ QA_STATUSES = (
 # Section 6: Closed Bugs – Status = Released (or Closed for JIRA workflows that use it)
 CLOSED_STATUSES = ("released", "closed")
 # Section 7: Preprod Status – include only these statuses (BugCount.cursorrules)
-PREPROD_STATUSES = ("ready for sit", "sit in progress", "ready for release", "ready to release")
+PREPROD_STATUSES = ("ready for sit", "sit in progress", "ready for release", "ready to release", "ready for rp")
 # Deployed/Released – UAT and Preprod both = Completed
 DEPLOYED_STATUSES = ("released", "closed", "beta deployed", "deployment completed")
 # Section 8: UAT Status – include only these statuses (BugCount.cursorrules)

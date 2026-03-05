@@ -2,19 +2,44 @@
 {% block title %}Scheduler Logs{% endblock %}
 {% block content %}
 <script type="application/json" id="scheduler-logs-data">{{ logs | tojson }}</script>
-<div class="flex flex-1 flex-col p-6 min-h-0">
-  <header class="mb-6">
-    <div class="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-medium px-3 py-1 mb-4 border border-cyan-500/20">
-      QA Daily Report → Scheduler
+<div class="flex flex-1 flex-col min-h-0 min-w-0">
+  <!-- Page header: below global bar, QA Daily Report subsection -->
+  <header class="sticky top-0 z-10 shrink-0 border-b border-slate-700/80 bg-slate-950/95 backdrop-blur-sm px-6 py-3">
+    <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1.5" aria-label="Breadcrumb">
+      <a href="{{ url_for('qa_daily_report') }}" class="hover:text-cyan-400 transition-colors">QA Daily Report</a>
+      <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+      <span class="text-cyan-300 font-medium">Scheduler Logs</span>
+    </nav>
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400" aria-hidden="true">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+      </span>
+      <div>
+        <h2 class="text-lg font-semibold text-white tracking-tight">Scheduler Logs</h2>
+        <p class="mt-0.5 text-sm text-slate-400">Scheduled QA daily report tasks</p>
+      </div>
     </div>
-    <h1 class="text-2xl font-bold text-white tracking-tight">Scheduler Logs</h1>
-    <p class="mt-1 text-sm text-slate-400">Scheduled QA daily report tasks</p>
   </header>
 
+  <div class="flex-1 min-h-0 overflow-auto p-6 space-y-4">
+  <!-- Summary: total reports posted to channel -->
+  <div class="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 p-4 flex flex-wrap items-center gap-4 shadow-lg shadow-emerald-500/5">
+    <div class="flex items-center gap-3">
+      <span class="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400" aria-hidden="true">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      </span>
+      <div>
+        <p class="text-sm font-medium text-slate-400">Reports posted to channel</p>
+        <p class="text-2xl font-bold text-white tabular-nums">{{ total_posted | default(0) }}</p>
+      </div>
+    </div>
+    <p class="text-sm text-slate-500">Total successful posts across all scheduled tasks</p>
+  </div>
+
   <div class="rounded-xl border border-slate-700/60 bg-slate-900/60 overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto max-h-[calc(100vh-18rem)]">
       <table class="w-full min-w-[32rem] text-left text-sm">
-        <thead>
+        <thead class="sticky top-0 z-[1] bg-slate-800/95 backdrop-blur-sm">
           <tr class="border-b border-slate-600 bg-slate-800/80">
             <th class="px-4 py-3 font-semibold text-cyan-300">Task Type</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">JIRA ID</th>
@@ -22,6 +47,7 @@
             <th class="px-4 py-3 font-semibold text-cyan-300">End Date</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">Time</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">Report Output</th>
+            <th class="px-4 py-3 font-semibold text-cyan-300 text-center">Posted</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">Status</th>
             <th class="px-4 py-3 font-semibold text-cyan-300">Actions</th>
           </tr>
@@ -35,6 +61,9 @@
             <td class="px-4 py-3 text-slate-300">{{ log.scheduler_end_date or '—' }}</td>
             <td class="px-4 py-3 text-slate-300">{{ log.scheduler_time_12hr or log.scheduler_time }}</td>
             <td class="px-4 py-3 text-slate-300 max-w-[12rem] truncate" title="{{ log.report_output_labels }}">{{ log.report_output_labels }}</td>
+            <td class="px-4 py-3 text-center">
+              <span class="inline-flex items-center justify-center min-w-[2.25rem] px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm font-semibold tabular-nums border border-emerald-500/40" title="Reports posted to channel successfully">{{ log.post_success_count | default(0) }}</span>
+            </td>
             <td class="px-4 py-3">
               {% if log.status == 'Paused' %}
               <span class="inline-flex items-center rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium px-2.5 py-0.5 border border-amber-500/30">Paused</span>
@@ -73,7 +102,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="8" class="px-4 py-8 text-center text-slate-500">No scheduled tasks. Schedule a report from <a href="{{ url_for('qa_daily_report') }}" class="text-cyan-400 hover:underline">QA Daily Report</a>.</td>
+            <td colspan="9" class="px-4 py-8 text-center text-slate-500">No scheduled tasks. Schedule a report from <a href="{{ url_for('qa_daily_report') }}" class="text-cyan-400 hover:underline">QA Daily Report</a>.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -125,6 +154,7 @@
 
   <div id="actions_message" class="hidden mt-4 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-300"></div>
   <div id="actions_error" class="hidden mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-300"></div>
+  </div>
 </div>
 
 <!-- Edit task modal -->
