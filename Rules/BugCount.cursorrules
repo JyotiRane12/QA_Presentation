@@ -149,7 +149,7 @@ Pre-Production stages.
 1. If Status = Released, Beta Deployed, or Deployment Completed:
    Preprod Status = "Completed"
 
-2. Else, if Status in Ready for SIT, SIT In Progress, Ready For Release:
+2. Else, if Status in Ready for SIT, SIT In Progress, Ready For Release, Ready For RP:
    Preprod Status = "In-progress"
 
 3. Otherwise: Preprod Status = "Pending"
@@ -165,7 +165,7 @@ User Acceptance Testing stages.
 1. If Status = Released, Beta Deployed, or Deployment Completed:
    UAT Status = "Completed"
 
-2. Else, if Preprod Status = In-progress (Ready for SIT, SIT In Progress, Ready For Release):
+2. Else, if Preprod Status = In-progress (Ready for SIT, SIT In Progress, Ready For Release, Ready for RP):
    UAT Status = "Completed"
 
 3. Else, if Status in Ready for UAT, UAT In Progress, Product UAT IP:

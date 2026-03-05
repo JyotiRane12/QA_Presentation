@@ -27,8 +27,9 @@ REPORTS_DIR.mkdir(exist_ok=True)
 _qa_scheduler = BackgroundScheduler()
 _qa_scheduler.start()
 
-# Persisted scheduler jobs (survives restarts). File path and in-memory list.
-SCHEDULER_JOBS_FILE = PROJECT_ROOT / "data" / "scheduler_jobs.json"
+# Persisted scheduler jobs (survives restarts). SQLite DB + in-memory list.
+from core import qa_report_db
+
 _scheduler_logs: list[dict] = []
 
 # Report output key -> display label (for Scheduler Logs and edit form)
@@ -51,22 +52,13 @@ REPORT_OUTPUT_LABELS = {
 
 
 def _load_scheduler_jobs() -> list[dict]:
-    """Load scheduler log entries from disk. Returns [] if file missing or invalid."""
-    if not SCHEDULER_JOBS_FILE.exists():
-        return []
-    try:
-        with open(SCHEDULER_JOBS_FILE, encoding="utf-8") as f:
-            data = json.load(f)
-        return data if isinstance(data, list) else []
-    except (json.JSONDecodeError, OSError):
-        return []
+    """Load scheduler log entries from SQLite. Returns [] if empty or on error."""
+    return qa_report_db.load_scheduler_jobs()
 
 
 def _save_scheduler_jobs(jobs: list[dict]) -> None:
-    """Persist scheduler log entries to disk."""
-    SCHEDULER_JOBS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(SCHEDULER_JOBS_FILE, "w", encoding="utf-8") as f:
-        json.dump(jobs, f, indent=2)
+    """Persist scheduler log entries to SQLite."""
+    qa_report_db.save_scheduler_jobs(jobs)
 
 
 def _parse_and_validate_date(s: str, field_name: str) -> tuple[datetime | None, str | None]:
@@ -190,14 +182,15 @@ def _add_job_for_entry(entry: dict) -> bool:
         end_d = date.fromisoformat(end_date)
         end_dt = datetime(end_d.year, end_d.month, end_d.day, 23, 59, 59)
         if frequency == "3min":
-            trigger = CronTrigger(minute="*/3", start_date=first_run_dt, end_date=end_dt)
+            trigger = CronTrigger(minute="*/3", day_of_week="mon-fri", start_date=first_run_dt, end_date=end_dt)
         elif frequency == "15min":
-            trigger = CronTrigger(minute="*/15", start_date=first_run_dt, end_date=end_dt)
+            trigger = CronTrigger(minute="*/15", day_of_week="mon-fri", start_date=first_run_dt, end_date=end_dt)
         else:
             trigger = CronTrigger(
                 hour=first_run_dt.hour,
                 minute=first_run_dt.minute,
                 second=first_run_dt.second,
+                day_of_week="mon-fri",
                 start_date=first_run_dt,
                 end_date=end_dt,
             )
@@ -235,6 +228,11 @@ def _remove_job_by_log_id(log_id: str) -> bool:
 def _register_scheduler_jobs() -> None:
     """Load persisted jobs and re-register active ones with the scheduler (call after startup)."""
     global _scheduler_logs
+    qa_report_db.init_db()
+    if qa_report_db.migrate_scheduler_jobs_from_json():
+        pass  # migration ran; load will read from DB now
+    # Keep DB clean: delete records older than (current date - 2 months)
+    qa_report_db.clean_old_data()
     _scheduler_logs = _load_scheduler_jobs()
     modified = False
     for e in _scheduler_logs:
@@ -243,6 +241,9 @@ def _register_scheduler_jobs() -> None:
             modified = True
         if "action_state" not in e:
             e["action_state"] = "active"
+            modified = True
+        if "post_success_count" not in e:
+            e["post_success_count"] = 0
             modified = True
     if modified:
         _save_scheduler_jobs(_scheduler_logs)
@@ -275,14 +276,15 @@ def _register_scheduler_jobs() -> None:
             end_d = date.fromisoformat(end_date)
             end_dt = datetime(end_d.year, end_d.month, end_d.day, 23, 59, 59)
             if frequency == "3min":
-                trigger = CronTrigger(minute="*/3", start_date=first_run_dt, end_date=end_dt)
+                trigger = CronTrigger(minute="*/3", day_of_week="mon-fri", start_date=first_run_dt, end_date=end_dt)
             elif frequency == "15min":
-                trigger = CronTrigger(minute="*/15", start_date=first_run_dt, end_date=end_dt)
+                trigger = CronTrigger(minute="*/15", day_of_week="mon-fri", start_date=first_run_dt, end_date=end_dt)
             else:
                 trigger = CronTrigger(
                     hour=first_run_dt.hour,
                     minute=first_run_dt.minute,
                     second=first_run_dt.second,
+                    day_of_week="mon-fri",
                     start_date=first_run_dt,
                     end_date=end_dt,
                 )
@@ -350,7 +352,7 @@ def run_report(
     return proc.returncode, out, gamma_url
 
 
-PENDING_REPORTS_DIR = PROJECT_ROOT / "data" / "pending_reports"
+PENDING_REPORTS_DIR = PROJECT_ROOT / "data" / "pending_reports"  # legacy; DB used for pending reports
 
 
 def _post_report_to_channel(channel_id: str, report_text: str) -> None:
@@ -389,7 +391,7 @@ def api_slack_interaction():
             if channel_id and report_text:
                 _post_report_to_channel(channel_id, report_text)
             if report_id:
-                (PENDING_REPORTS_DIR / f"{report_id}.json").unlink(missing_ok=True)
+                qa_report_db.delete_pending_report(report_id)
             return "", 200
 
     # Button clicks (block_actions)
@@ -402,19 +404,16 @@ def api_slack_interaction():
     if not report_id:
         return "", 200
 
-    pending_file = PENDING_REPORTS_DIR / f"{report_id}.json"
-    if not pending_file.exists():
+    data = qa_report_db.get_pending_report(report_id)
+    if data is None:
+        data = qa_report_db.migrate_pending_report_from_file(report_id)
+    if data is None:
         return "", 200
-    try:
-        data = json.loads(pending_file.read_text(encoding="utf-8"))
-        report_text = data.get("report") or ""
-        channel_id = (data.get("channel_id") or "").strip() or os.environ.get("SLACK_CHANNEL_ID", "").strip()
-    except (json.JSONDecodeError, OSError):
-        pending_file.unlink(missing_ok=True)
-        return "", 200
+    report_text = data.get("report") or ""
+    channel_id = (data.get("channel_id") or "").strip() or os.environ.get("SLACK_CHANNEL_ID", "").strip()
 
     if action_id == "post_report_to_channel":
-        pending_file.unlink(missing_ok=True)
+        qa_report_db.delete_pending_report(report_id)
         if channel_id and report_text:
             _post_report_to_channel(channel_id, report_text)
         return "", 200
@@ -554,6 +553,8 @@ def scheduler_logs():
     # Latest first (most recently created/scheduled on top)
     logs_with_status.reverse()
 
+    total_posted = sum((log.get("post_success_count") or 0) for log in _scheduler_logs)
+
     per_page = request.args.get("per_page", PER_PAGE_DEFAULT, type=int)
     if per_page not in PER_PAGE_OPTIONS:
         per_page = PER_PAGE_DEFAULT
@@ -574,6 +575,7 @@ def scheduler_logs():
         "scheduler_logs.html",
         active_page="scheduler_logs",
         logs=logs_page,
+        total_posted=total_posted,
         report_output_options=list(REPORT_OUTPUT_LABELS.items()),
         schedule_min_date=today,
         schedule_max_end_date=max_end,
@@ -764,9 +766,13 @@ def _run_scheduled_qa_daily_report(
     slack_channel_id: str | None,
     slack_user_id: str | None,
     report_output_keys: list[str] | None,
+    _log_id: str | None = None,
     **_kwargs: object,
 ) -> None:
-    """Run the QA daily report (used by scheduler). Logs result; no return to caller. _kwargs absorbs _log_id etc."""
+    """Run the QA daily report (used by scheduler). Does not run on Saturday or Sunday. Increments post_success_count on success."""
+    # Do not run on weekends
+    if datetime.now().weekday() >= 5:  # 5=Saturday, 6=Sunday
+        return
     try:
         returncode, report, log = run_qa_daily_report(
             issue_keys=issue_keys,
@@ -779,6 +785,17 @@ def _run_scheduled_qa_daily_report(
             print(f"[QA Daily Report scheduled run] non-zero exit {returncode}: {log[:500]}")
         else:
             print(f"[QA Daily Report scheduled run] completed successfully.")
+            # Count as "posted to channel" when report actually reached Slack (channel or review)
+            posted = (
+                "Report posted to Slack" in log
+                or "Report sent to user" in log
+                or "Report sent as ephemeral" in log
+            )
+            if posted and _log_id:
+                qa_report_db.increment_post_success_count(_log_id)
+                entry = _find_log_entry(_log_id)
+                if entry is not None:
+                    entry["post_success_count"] = (entry.get("post_success_count") or 0) + 1
     except Exception as e:
         print(f"[QA Daily Report scheduled run] error: {e}")
 
@@ -887,20 +904,22 @@ def api_qa_daily_report():
                 "slack_channel_id": slack_channel_id,
                 "slack_user_id": slack_user_id if output_option == "review" else None,
                 "report_output_keys": report_output_keys,
+                "post_success_count": 0,
             }
             job_kwargs = _job_kwargs_for_entry(entry)
             if frequency == "3min":
-                trigger = CronTrigger(minute="*/3", start_date=start_dt, end_date=end_dt)
-                msg = f"Report scheduled every 3 min from {start_dt.strftime('%Y-%m-%d %H:%M')} to {end_dt.strftime('%Y-%m-%d %H:%M')}."
+                trigger = CronTrigger(minute="*/3", day_of_week="mon-fri", start_date=start_dt, end_date=end_dt)
+                msg = f"Report scheduled every 3 min (Mon–Fri) from {start_dt.strftime('%Y-%m-%d %H:%M')} to {end_dt.strftime('%Y-%m-%d %H:%M')}."
             else:
                 trigger = CronTrigger(
                     hour=start_dt.hour,
                     minute=start_dt.minute,
                     second=start_dt.second,
+                    day_of_week="mon-fri",
                     start_date=start_dt,
                     end_date=end_dt,
                 )
-                msg = f"Report scheduled daily at {start_dt.strftime('%H:%M')} from {start_dt.date()} to {end_dt.date()}."
+                msg = f"Report scheduled daily at {start_dt.strftime('%H:%M')} (Mon–Fri) from {start_dt.date()} to {end_dt.date()}."
             _qa_scheduler.add_job(
                 _run_scheduled_qa_daily_report,
                 trigger=trigger,
@@ -924,6 +943,7 @@ def api_qa_daily_report():
                 "slack_channel_id": slack_channel_id,
                 "slack_user_id": slack_user_id if output_option == "review" else None,
                 "report_output_keys": report_output_keys,
+                "post_success_count": 0,
             }
             job_kwargs = _job_kwargs_for_entry(entry)
             _qa_scheduler.add_job(
